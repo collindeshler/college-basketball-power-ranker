@@ -1,0 +1,5046 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>College Basketball Power Ranker</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+<style>
+body {
+  font-family: Arial;
+  margin:0;
+  background:#f5f5f5;
+  transition:.3s;
+}
+body.dark {
+  background:#1e1e1e;
+  color:#ddd;
+}
+
+.header {
+  background:#222;
+  color:white;
+  padding:20px;
+  font-size:28px;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+}
+
+.headerActions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.container {
+  display:flex;
+  gap:20px;
+  padding:20px;
+  align-items: flex-start;
+}
+
+.box {
+  background:white;
+  padding:15px;
+  border-radius:10px;
+  box-shadow:0 4px 10px rgba(0,0,0,.15);
+  box-sizing: border-box;
+  overflow-y:auto;
+  overflow-x:hidden;
+}
+body.dark .box { background:#2e2e2e; }
+
+#available {
+  flex: 0 0 33.333%;
+  min-height:0;
+  max-height:none;
+  display:flex;
+  flex-direction:column;
+  overflow:hidden;
+  height: 2300px;
+  min-height: 2300px;
+  max-height: 2300px;
+}
+#ranking {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size:18px;
+  height: 2300px;
+  min-height: 2300px;
+  max-height: 2300px;
+  overflow-y: hidden;
+}
+
+.rankingSlots {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.rankSlot {
+  border: 1px dashed #c7cdd6;
+  border-radius: 8px;
+  min-height: 54px;
+  padding: 4px 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #f8fafc;
+}
+
+body.dark .rankSlot {
+  border-color: #5c6470;
+  background: #2f3640;
+}
+
+.rankSlotLabel {
+  width: 34px;
+  text-align: right;
+  font-weight: 700;
+  opacity: 0.8;
+  flex: 0 0 auto;
+}
+
+.rankSlotEmpty {
+  opacity: 0.6;
+  font-size: 13px;
+}
+
+.honorableWrap {
+  margin-top: 14px;
+}
+
+.honorableTitle {
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+
+.honorableSlots {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.hmSlot {
+  border: 1px dashed #c7cdd6;
+  border-radius: 8px;
+  min-height: 80px;
+  padding: 4px;
+  background: #f8fafc;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+body.dark .hmSlot {
+  border-color: #5c6470;
+  background: #2f3640;
+}
+
+.hmLabel {
+  font-size: 11px;
+  opacity: 0.72;
+  text-align: center;
+  margin-bottom: 2px;
+}
+
+.team {
+  padding:5px;
+  margin:5px 0;
+  background:#eee;
+  border-radius:6px;
+  display:flex;
+  gap:10px;
+  align-items: center;
+  cursor:grab;
+}
+body.dark .team { background:#3a3a3a; }
+
+.team img { width:40px; height:40px; object-fit:contain; align-self:center; }
+
+.search-section {
+  background:inherit;
+  padding-bottom:10px;
+  z-index:2;
+}
+.search-section input, .search-section select {
+  width:95%;
+  padding:6px;
+  margin-bottom:6px;
+}
+
+#availableTeamsList {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.controls {
+  display:flex;
+  justify-content:center;
+  gap:10px;
+  margin:10px;
+  align-items:center;
+}
+
+.savedListsWrap {
+  position: relative;
+}
+
+.savedListsMenu {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  min-width: 320px;
+  max-height: 320px;
+  overflow-y: auto;
+  background: #fff;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0,0,0,.18);
+  padding: 8px;
+  display: none;
+  z-index: 20;
+}
+
+body.dark .savedListsMenu {
+  background: #2a2a2a;
+  border-color: #444;
+}
+
+.savedListRow {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 0;
+}
+
+.savedListView {
+  flex: 1;
+  text-align: left;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  background: #f9fafb;
+  padding: 6px 8px;
+  cursor: pointer;
+}
+
+body.dark .savedListView {
+  background: #3a3a3a;
+  border-color: #555;
+  color: #eee;
+}
+
+.deleteListBtn {
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  background: #fff;
+  width: 34px;
+  height: 34px;
+  cursor: pointer;
+}
+
+body.dark .deleteListBtn {
+  background: #3a3a3a;
+  border-color: #555;
+  color: #eee;
+}
+
+.savedListEmpty {
+  padding: 8px;
+  font-size: 14px;
+}
+
+.modalBackdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
+}
+
+.modalCard {
+  background: #fff;
+  border-radius: 10px;
+  padding: 16px;
+  width: min(360px, 92vw);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.25);
+}
+
+body.dark .modalCard {
+  background: #2a2a2a;
+  color: #eee;
+}
+
+.modalCard h4 {
+  margin: 0 0 10px;
+}
+
+.modalCard input[type="date"] {
+  width: 100%;
+  padding: 8px;
+  margin-bottom: 12px;
+}
+
+.helperCard {
+  width: min(1280px, 96vw);
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.helperMeta {
+  font-size: 13px;
+  opacity: 0.85;
+  margin-bottom: 8px;
+}
+
+.helperPrompt {
+  font-weight: 700;
+  margin-bottom: 10px;
+}
+
+.helperChoices {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.helperChoice {
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  background: #f9fafb;
+  cursor: pointer;
+  text-align: left;
+  padding: 14px;
+  min-height: 220px;
+}
+
+body.dark .helperChoice {
+  background: #3a3a3a;
+  border-color: #555;
+  color: #eee;
+}
+
+.helperChoice strong {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 20px;
+}
+
+.helperChoiceRow {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+}
+
+.helperTeamLogo {
+  width: 120px;
+  height: 120px;
+  object-fit: contain;
+  flex: 0 0 auto;
+}
+
+.helperChoiceMeta {
+  font-size: 16px;
+  line-height: 1.35;
+}
+
+.helperResultList {
+  max-height: 360px;
+  overflow: auto;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  padding: 8px;
+  background: #f9fafb;
+}
+
+body.dark .helperResultList {
+  background: #3a3a3a;
+  border-color: #555;
+}
+
+#rankHelperBody {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+
+.modalActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.teamDetailsGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px 12px;
+  margin-top: 10px;
+}
+
+.teamDetailItem {
+  background: #f3f4f6;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 8px;
+}
+
+body.dark .teamDetailItem {
+  background: #3a3a3a;
+  border-color: #555;
+}
+
+.teamDetailItem strong {
+  display: block;
+  font-size: 12px;
+  opacity: 0.8;
+  margin-bottom: 4px;
+}
+
+.teamDetailsHeader {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.teamDetailsHeader img {
+  width: 44px;
+  height: 44px;
+  object-fit: contain;
+}
+
+#chartContainer {
+  margin:20px;
+  padding:20px;
+  background:white;
+  border-radius:10px;
+  position: relative;
+}
+body.dark #chartContainer { background:#2e2e2e; }
+
+.conferenceTooltip {
+  position: absolute;
+  display: none;
+  pointer-events: none;
+  z-index: 15;
+  background: rgba(17, 24, 39, 0.96);
+  color: #f9fafb;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  padding: 8px 10px;
+  min-width: 140px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.28);
+}
+
+.conferenceTooltip img {
+  width: 96px;
+  height: 44px;
+  object-fit: contain;
+  display: block;
+  margin: 4px auto 6px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 4px;
+}
+
+.conferenceTooltipTitle {
+  font-size: 12px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.conferenceTooltipMeta {
+  font-size: 11px;
+  text-align: center;
+  opacity: 0.9;
+}
+
+.weekTracker {
+  margin:20px;
+  padding:20px;
+  background:white;
+  border-radius:10px;
+}
+body.dark .weekTracker { background:#2e2e2e; }
+
+.weekControls {
+  display:flex;
+  gap:12px;
+  flex-wrap:wrap;
+  margin-bottom:12px;
+}
+
+.weekControls label {
+  display:flex;
+  gap:6px;
+  align-items:center;
+}
+
+.weekControls select {
+  padding:4px 6px;
+}
+
+#weeksList {
+  margin-bottom:12px;
+  font-size:14px;
+}
+
+#trendContainer {
+  margin:20px;
+  padding:20px;
+  background:white;
+  border-radius:10px;
+}
+body.dark #trendContainer { background:#2e2e2e; }
+
+#trendChart {
+  width: 100%;
+  display: block;
+}
+
+#conferenceChart {
+  width: 100%;
+  display: block;
+}
+
+/* Unified design layer */
+:root {
+  --bg: #eef2f6;
+  --surface: #ffffff;
+  --surface-soft: #f7fafc;
+  --text: #0f172a;
+  --muted: #4b5563;
+  --border: #d7dee7;
+  --accent: #0b4f82;
+  --shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+  --radius-lg: 14px;
+  --radius-md: 10px;
+}
+
+body.dark {
+  --bg: #111827;
+  --surface: #1f2937;
+  --surface-soft: #273243;
+  --text: #e5e7eb;
+  --muted: #9ca3af;
+  --border: #374151;
+  --accent: #5ea6d6;
+  --shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+}
+
+body {
+  background: linear-gradient(180deg, var(--bg) 0%, color-mix(in srgb, var(--bg) 86%, #ffffff 14%) 100%);
+  color: var(--text);
+  font-family: "Avenir Next", "Segoe UI", Arial, sans-serif;
+}
+
+.header {
+  background: linear-gradient(120deg, #0a2d4a, #0d4f7f);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.22);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.22);
+  font-weight: 700;
+}
+
+body.dark .header {
+  background: linear-gradient(120deg, #0a2036, #113b62);
+}
+
+.controls {
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 14px 14px 8px;
+}
+
+button,
+select,
+input {
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+}
+
+button {
+  padding: 8px 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.pinBadge {
+  display: inline-flex;
+  align-items: center;
+  height: 34px;
+  padding: 0 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.iconBtn {
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+}
+
+.authModeRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.authModeBtn {
+  padding: 8px 10px;
+}
+
+.authModeBtnActive {
+  border-color: color-mix(in srgb, var(--accent) 55%, var(--border));
+  background: color-mix(in srgb, var(--surface) 78%, var(--accent) 22%);
+}
+
+.pinHelpWrap {
+  position: relative;
+  display: inline-flex;
+}
+
+.pinTooltip {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  width: min(320px, 80vw);
+  background: rgba(0, 0, 0, 0.9);
+  color: #fff;
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 12px;
+  line-height: 1.4;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.35);
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-4px);
+  transition: opacity 0.15s ease, transform 0.15s ease;
+  z-index: 200;
+}
+
+.pinHelpWrap:hover .pinTooltip,
+.pinHelpWrap:focus-within .pinTooltip {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+button:hover {
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
+  background: color-mix(in srgb, var(--surface) 82%, var(--accent) 18%);
+}
+
+.box,
+#chartContainer,
+#trendContainer,
+.weekTracker {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+}
+
+.box h2,
+#chartContainer h3,
+#trendContainer h3,
+.weekTracker h3 {
+  margin-top: 0;
+  margin-bottom: 12px;
+  color: var(--text);
+  letter-spacing: 0.2px;
+}
+
+.search-section {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 10px;
+}
+
+.search-section input,
+.search-section select {
+  width: 100%;
+  padding: 9px 10px;
+  margin-bottom: 8px;
+  box-sizing: border-box;
+}
+
+.team {
+  background: var(--surface-soft);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 7px;
+}
+
+.rankSlot,
+.hmSlot {
+  background: var(--surface-soft);
+  border-color: var(--border);
+}
+
+.rankSlotLabel,
+.hmLabel,
+.rankSlotEmpty {
+  color: var(--muted);
+}
+
+.savedListsMenu {
+  background: var(--surface);
+  border-color: var(--border);
+  border-radius: var(--radius-md);
+}
+
+.savedListView,
+.deleteListBtn,
+.teamDetailItem,
+.helperChoice,
+.helperResultList {
+  border-color: var(--border);
+  background: var(--surface-soft);
+}
+
+.modalCard {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+}
+
+body.preAuth .header,
+body.preAuth .controls,
+body.preAuth .container,
+body.preAuth #chartContainer,
+body.preAuth #conferenceContainer,
+body.preAuth #trendContainer,
+body.preAuth #weekTracker {
+  display: none;
+}
+
+body.preAuth #pinModal {
+  display: flex !important;
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+}
+
+@media (max-width: 1100px) {
+  .container {
+    flex-direction: column;
+  }
+
+  #available,
+  #ranking {
+    width: 100%;
+  }
+
+  .honorableSlots {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+</style>
+</head>
+
+<body class="preAuth">
+
+<div class="header">
+<span id="appTitle">College Basketball Power Ranker</span>
+<div class="headerActions">
+<button id="modeToggle">Dark Mode</button>
+<span id="changePinBtn" class="pinBadge">PIN</span>
+<button id="logoutBtn">Log Out</button>
+</div>
+</div>
+
+<div class="controls">
+<select id="sportToggle">
+<option value="basketball">College Basketball</option>
+<option value="football">College Football (FBS)</option>
+</select>
+<button id="rankHelperBtn">Rank Helper</button>
+<button id="saveWeek">Save Week</button>
+<div class="savedListsWrap">
+<button id="savedListsBtn">Saved Lists</button>
+<div id="savedListsMenu" class="savedListsMenu"></div>
+</div>
+<button id="updateRecords">Update Records</button>
+<button id="resetRanking">Reset Rankings</button>
+<button id="exportPDF">Download Ranking</button>
+<button id="downloadTracker">Download Weekly Tracker</button>
+</div>
+
+<div class="container">
+
+<div class="box" id="available">
+<h2>Available Teams</h2>
+
+<div class="search-section">
+<input id="searchInput" placeholder="Search teams...">
+<select id="confFilter">
+<option value="">All Conferences</option>
+</select>
+<select id="tierFilter">
+<option value="">All Teams</option>
+<option value="major">Power Conferences</option>
+<option value="midmajor">Mid-Majors</option>
+<option value="apOnly">Current AP Poll Only</option>
+<option value="coachesOnly">Current Coaches Poll Only</option>
+</select>
+<select id="sortFilter">
+<option value="alphaAsc">Sort: A-Z</option>
+<option value="alphaDesc">Sort: Z-A</option>
+<option value="recordBest">Sort: Best Record</option>
+<option value="recordWorst">Sort: Worst Record</option>
+</select>
+</div>
+
+<div id="availableTeamsList"></div>
+
+</div>
+
+<div class="box" id="ranking">
+<h2>Your Power Rankings</h2>
+</div>
+
+</div>
+
+<div id="chartContainer">
+<h3 style="text-align:center;">Conference Breakdown</h3>
+<canvas id="conferenceChart"></canvas>
+</div>
+
+<div id="trendContainer">
+<h3 style="text-align:center;">Weekly Tracker</h3>
+<canvas id="trendChart"></canvas>
+</div>
+
+<div class="weekTracker" id="weekTracker">
+<h3>Week to Week Comparison</h3>
+<div class="weekControls">
+<label>From
+<select id="weekFrom"></select>
+</label>
+<label>To
+<select id="weekTo"></select>
+</label>
+</div>
+<div id="compareOutput"></div>
+</div>
+
+<div id="datePickerModal" class="modalBackdrop">
+  <div class="modalCard" role="dialog" aria-modal="true" aria-labelledby="datePickerTitle">
+    <h4 id="datePickerTitle">Choose Ranking Date</h4>
+    <input id="datePickerInput" type="date">
+    <div class="modalActions">
+      <button id="datePickerCancel">Cancel</button>
+      <button id="datePickerConfirm">Save</button>
+    </div>
+  </div>
+</div>
+
+<div id="teamDetailsModal" class="modalBackdrop">
+  <div class="modalCard" role="dialog" aria-modal="true" aria-labelledby="teamDetailsTitle">
+    <h4 id="teamDetailsTitle">Team Details</h4>
+    <div id="teamDetailsBody"></div>
+    <div class="modalActions">
+      <button id="teamDetailsClose">Close</button>
+    </div>
+  </div>
+</div>
+
+<div id="pinModal" class="modalBackdrop">
+  <div class="modalCard" role="dialog" aria-modal="true" aria-labelledby="pinTitle">
+    <div style="display:flex; align-items:center; justify-content:space-between; gap:10px;">
+      <h4 id="pinTitle" style="margin:0;">Welcome</h4>
+      <div class="pinHelpWrap">
+        <button id="pinHelpBtn" class="iconBtn" title="PIN Help" aria-label="PIN Help" type="button">?</button>
+        <div class="pinTooltip">
+          Each PIN is its own profile. Sign In uses an existing PIN, New User creates a new PIN. If a PIN is already taken, choose another one.
+        </div>
+      </div>
+    </div>
+    <div class="authModeRow">
+      <button id="pinModeSignIn" class="authModeBtn authModeBtnActive" type="button">Sign In</button>
+      <button id="pinModeCreate" class="authModeBtn" type="button">New User</button>
+    </div>
+    <input id="pinInput" type="password" inputmode="numeric" placeholder="Any number">
+    <div id="pinHint" style="min-height:18px; font-size:12px; color:var(--muted); margin-bottom:4px;">
+      Enter your PIN to sign in.
+    </div>
+    <div id="pinError" style="display:none; font-size:12px; color:#dc2626; margin-bottom:8px;"></div>
+    <div class="modalActions">
+      <button id="pinCancel">Cancel</button>
+      <button id="pinConfirm">Sign In</button>
+    </div>
+  </div>
+</div>
+
+<div id="rankHelperModal" class="modalBackdrop">
+  <div class="modalCard helperCard" role="dialog" aria-modal="true" aria-labelledby="rankHelperTitle">
+    <h4 id="rankHelperTitle">Rank Helper</h4>
+    <div id="rankHelperBody"></div>
+    <div class="modalActions">
+      <button id="rankHelperClose">Close</button>
+    </div>
+  </div>
+</div>
+
+<script src="data.js"></script>
+
+<script>
+const STORAGE_KEYS = {
+  currentRanking: "cbb_current_ranking_v1",
+  honorableMentions: "cbb_honorable_mentions_v1",
+  weeks: "cbb_saved_weeks_v1",
+  records: "cbb_team_records_v1",
+  teamStats: "cbb_team_stats_v1"
+};
+const ARCHIVE_FOOTBALL = true;
+const PIN_SESSION_KEY = "cbb_active_pin_v1";
+const PIN_REGISTRY_KEY = "cbb_registered_pins_v1";
+const REMOTE_SYNC_API_BASE = `${window.location.origin}/api`;
+const REMOTE_SYNC_ENABLED = /^https?:$/i.test(window.location.protocol);
+
+const availableDiv = document.getElementById("available");
+const availableTeamsList = document.getElementById("availableTeamsList");
+const rankingDiv = document.getElementById("ranking");
+const searchInput = document.getElementById("searchInput");
+const confFilter = document.getElementById("confFilter");
+const tierFilter = document.getElementById("tierFilter");
+const sortFilter = document.getElementById("sortFilter");
+const modeToggle = document.getElementById("modeToggle");
+const appTitle = document.getElementById("appTitle");
+const rankHelperBtn = document.getElementById("rankHelperBtn");
+const changePinBtn = document.getElementById("changePinBtn");
+const pinHelpBtn = document.getElementById("pinHelpBtn");
+const logoutBtn = document.getElementById("logoutBtn");
+const compareOutput = document.getElementById("compareOutput");
+const sportToggle = document.getElementById("sportToggle");
+const weekFromSelect = document.getElementById("weekFrom");
+const weekToSelect = document.getElementById("weekTo");
+const savedListsBtn = document.getElementById("savedListsBtn");
+const savedListsMenu = document.getElementById("savedListsMenu");
+const updateRecordsBtn = document.getElementById("updateRecords");
+const datePickerModal = document.getElementById("datePickerModal");
+const datePickerInput = document.getElementById("datePickerInput");
+const datePickerCancel = document.getElementById("datePickerCancel");
+const datePickerConfirm = document.getElementById("datePickerConfirm");
+const teamDetailsModal = document.getElementById("teamDetailsModal");
+const teamDetailsBody = document.getElementById("teamDetailsBody");
+const teamDetailsClose = document.getElementById("teamDetailsClose");
+const pinModal = document.getElementById("pinModal");
+const pinInput = document.getElementById("pinInput");
+const pinError = document.getElementById("pinError");
+const pinCancel = document.getElementById("pinCancel");
+const pinConfirm = document.getElementById("pinConfirm");
+const pinHint = document.getElementById("pinHint");
+const pinModeSignIn = document.getElementById("pinModeSignIn");
+const pinModeCreate = document.getElementById("pinModeCreate");
+const rankHelperModal = document.getElementById("rankHelperModal");
+const rankHelperBody = document.getElementById("rankHelperBody");
+const rankHelperClose = document.getElementById("rankHelperClose");
+
+let currentSport = "basketball";
+let activePin = sessionStorage.getItem(PIN_SESSION_KEY) || "";
+let basketballTeamsMaster = [];
+let footballTeamsMaster = [];
+let ranking = loadCurrentRanking();
+let honorableMentions = loadHonorableMentions();
+let weeks = loadWeeks();
+const logoCache = {};
+const teamColorCache = {};
+let trendRenderScheduled = false;
+let conferenceRenderScheduled = false;
+let recordsUpdateInProgress = false;
+let suppressTeamClickUntil = 0;
+let apPollLoadPromise = null;
+let coachesPollLoadPromise = null;
+let netRankingsLoadPromise = null;
+let netRankingsCache = null;
+let cbsGameWindowPromise = null;
+let cbsGameWindowLoadedAt = 0;
+let cbsGameWindowCache = [];
+let conferenceBarHitboxes = [];
+let conferenceLogoLoadPromise = null;
+const conferenceLogoLoadedSports = new Set();
+let rankHelperState = null;
+let remoteSyncSaveTimer = null;
+let remoteSyncInFlight = false;
+let remoteSyncPending = false;
+let pinAuthMode = "signin";
+
+const CONFERENCE_LOGO_URLS = {};
+
+const conferenceLogoImageCache = {};
+
+const FBS_CONFERENCES = new Set([
+  "ACC",
+  "American Athletic",
+  "Big 12",
+  "Big Ten",
+  "Conference USA",
+  "Mid-American",
+  "Mountain West",
+  "SEC",
+  "Sun Belt",
+  "Pac-12",
+  "Independent"
+]);
+
+function isBasketballSport() {
+  return currentSport === "basketball";
+}
+
+function getSportApiPath() {
+  return isBasketballSport()
+    ? "basketball/mens-college-basketball"
+    : "football/college-football";
+}
+
+function getSportStorageKey(baseKey) {
+  const sportScoped = isBasketballSport() ? STORAGE_KEYS[baseKey] : `${STORAGE_KEYS[baseKey]}_${currentSport}`;
+  const pinScoped = activePin ? `pin_${activePin}_${sportScoped}` : `pin_guest_${sportScoped}`;
+  return pinScoped;
+}
+
+function getRemoteSportKey() {
+  return isBasketballSport() ? "basketball" : "football";
+}
+
+function canUseRemoteApi() {
+  return REMOTE_SYNC_ENABLED;
+}
+
+function canUseRemoteSync() {
+  return REMOTE_SYNC_ENABLED && Boolean(activePin);
+}
+
+function getRemoteContextToken() {
+  return `${activePin || "guest"}:${getRemoteSportKey()}`;
+}
+
+function setPinAuthMode(mode) {
+  pinAuthMode = mode === "create" ? "create" : "signin";
+  const creating = pinAuthMode === "create";
+  pinModeSignIn.classList.toggle("authModeBtnActive", !creating);
+  pinModeCreate.classList.toggle("authModeBtnActive", creating);
+  pinHint.textContent = creating
+    ? "Choose any numeric PIN. If it is already taken, pick another."
+    : "Enter your PIN to sign in.";
+  pinConfirm.textContent = creating ? "Create PIN" : "Sign In";
+}
+
+function clearPinError() {
+  pinError.textContent = "";
+  pinError.style.display = "none";
+}
+
+function showPinError(message) {
+  pinError.textContent = message;
+  pinError.style.display = message ? "block" : "none";
+}
+
+function readLocalPinRegistry() {
+  try {
+    const raw = localStorage.getItem(PIN_REGISTRY_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    return parsed
+      .map(normalizePin)
+      .filter(Boolean);
+  } catch {
+    return [];
+  }
+}
+
+function writeLocalPinRegistry(pins) {
+  const unique = [...new Set((pins || []).map(normalizePin).filter(Boolean))];
+  localStorage.setItem(PIN_REGISTRY_KEY, JSON.stringify(unique));
+}
+
+function registerLocalPin(pin) {
+  const normalized = normalizePin(pin);
+  if (!normalized) return;
+  const pins = readLocalPinRegistry();
+  if (pins.includes(normalized)) return;
+  pins.push(normalized);
+  writeLocalPinRegistry(pins);
+}
+
+function hasLocalProfileForPin(pin) {
+  const normalized = normalizePin(pin);
+  if (!normalized) return false;
+  const pins = readLocalPinRegistry();
+  if (pins.includes(normalized)) return true;
+  return Object.values(STORAGE_KEYS).some(baseKey => {
+    const basketKey = `pin_${normalized}_${baseKey}`;
+    const footballKey = `pin_${normalized}_${baseKey}_football`;
+    return Boolean(localStorage.getItem(basketKey) || localStorage.getItem(footballKey));
+  });
+}
+
+function setAuthState(isAuthenticated) {
+  document.body.classList.toggle("preAuth", !isAuthenticated);
+}
+
+async function registerPinWithServer(pin) {
+  const response = await fetch(`${REMOTE_SYNC_API_BASE}/pin/register`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ pin })
+  });
+  if (response.ok) return { ok: true };
+  let errorCode = "REGISTER_FAILED";
+  try {
+    const payload = await response.json();
+    if (payload?.code) errorCode = payload.code;
+  } catch {
+    // Ignore parse errors.
+  }
+  return { ok: false, code: errorCode };
+}
+
+async function loginPinWithServer(pin) {
+  const response = await fetch(`${REMOTE_SYNC_API_BASE}/pin/login`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ pin })
+  });
+  if (response.ok) return { ok: true };
+  let errorCode = "LOGIN_FAILED";
+  try {
+    const payload = await response.json();
+    if (payload?.code) errorCode = payload.code;
+  } catch {
+    // Ignore parse errors.
+  }
+  return { ok: false, code: errorCode };
+}
+
+function setCurrentTeams(nextTeams) {
+  teams.splice(0, teams.length, ...nextTeams);
+}
+
+function normalizeFootballConference(value) {
+  const raw = String(value || "").trim();
+  if (!raw) return "Other";
+  const key = raw.toLowerCase();
+  if (key.includes("atlantic coast") || key === "acc") return "ACC";
+  if (key.includes("american athletic") || key === "aac" || key === "american") return "American Athletic";
+  if (key.includes("big 12")) return "Big 12";
+  if (key.includes("big ten") || key === "b1g") return "Big Ten";
+  if (key.includes("conference usa") || key === "c-usa" || key === "cusa") return "Conference USA";
+  if (key.includes("mid-american") || key === "mac") return "Mid-American";
+  if (key.includes("mountain west") || key === "mwc") return "Mountain West";
+  if (key.includes("southeastern") || key === "sec") return "SEC";
+  if (key.includes("sun belt")) return "Sun Belt";
+  if (key.includes("pac-12") || key.includes("pac 12")) return "Pac-12";
+  if (key.includes("independent")) return "Independent";
+  return raw;
+}
+
+function pickFootballConference(entry, team) {
+  const values = [
+    entry?.group?.shortName,
+    entry?.group?.name,
+    team?.group?.shortName,
+    team?.group?.name,
+    team?.conference?.shortName,
+    team?.conference?.name,
+    entry?.conference?.shortName,
+    entry?.conference?.name
+  ];
+  for (const value of values) {
+    const normalized = normalizeFootballConference(value);
+    if (FBS_CONFERENCES.has(normalized)) return normalized;
+  }
+  return normalizeFootballConference(values.find(Boolean));
+}
+
+function getTeamLogoFromEspnObject(team) {
+  return team?.logos?.[0]?.href || team?.logo || "";
+}
+
+function collectFbsStandingsEntries(payload) {
+  const out = [];
+
+  const walk = (node) => {
+    if (!node || typeof node !== "object") return;
+    if (Array.isArray(node)) {
+      node.forEach(walk);
+      return;
+    }
+    if (Array.isArray(node?.entries)) {
+      out.push(...node.entries);
+    }
+    Object.values(node).forEach(walk);
+  };
+
+  walk(payload);
+  return out;
+}
+
+async function fetchFbsTeamMetaFromStandings() {
+  const endpoints = [
+    "https://site.api.espn.com/apis/site/v2/sports/football/college-football/standings?groups=80",
+    "https://site.web.api.espn.com/apis/v2/sports/football/college-football/standings?groups=80"
+  ];
+  const byId = new Map();
+
+  for (const endpoint of endpoints) {
+    try {
+      const response = await fetch(endpoint);
+      if (!response.ok) continue;
+      const payload = await response.json();
+      const entries = collectFbsStandingsEntries(payload);
+      entries.forEach(entry => {
+        const team = entry?.team || {};
+        const id = String(team?.id || "").trim();
+        if (!id) return;
+        const conference = pickFootballConference(entry, team);
+        const record = pickRecordSummary({ team: { record: entry?.stats ? { items: entry.stats } : undefined } }) || "N/A";
+        byId.set(id, {
+          conference: FBS_CONFERENCES.has(conference) ? conference : "Independent",
+          record
+        });
+      });
+      if (byId.size) return byId;
+    } catch {
+      // Try next endpoint.
+    }
+  }
+
+  return byId;
+}
+
+async function fetchFbsTeamIdSet() {
+  const endpoints = [
+    "https://site.api.espn.com/apis/site/v2/sports/football/college-football/teams?groups=80&limit=500",
+    "https://site.web.api.espn.com/apis/v2/sports/football/college-football/teams?groups=80&limit=500"
+  ];
+  const ids = new Set();
+
+  for (const endpoint of endpoints) {
+    try {
+      const response = await fetch(endpoint);
+      if (!response.ok) continue;
+      const payload = await response.json();
+      const entries = payload?.sports?.[0]?.leagues?.[0]?.teams || payload?.teams || [];
+      entries.forEach(item => {
+        const team = item?.team || item;
+        const id = String(team?.id || "").trim();
+        if (id) ids.add(id);
+      });
+    } catch {
+      // Try next endpoint.
+    }
+  }
+
+  return ids;
+}
+
+async function fetchFootballTeamsFromEspn() {
+  const fbsTeamIds = await fetchFbsTeamIdSet();
+  const fbsTeamMetaById = await fetchFbsTeamMetaFromStandings();
+  const endpoints = [
+    "https://site.api.espn.com/apis/site/v2/sports/football/college-football/teams?groups=80&limit=1000",
+    "https://site.web.api.espn.com/apis/v2/sports/football/college-football/teams?groups=80&limit=1000"
+  ];
+  const byId = new Map();
+
+  for (const endpoint of endpoints) {
+    try {
+      const response = await fetch(endpoint);
+      if (!response.ok) continue;
+      const payload = await response.json();
+      const entries = payload?.sports?.[0]?.leagues?.[0]?.teams || payload?.teams || [];
+
+      entries.forEach(item => {
+        const entry = item || {};
+        const team = entry?.team || entry;
+        const id = String(team?.id || "").trim();
+        const name = String(team?.displayName || team?.shortDisplayName || team?.name || "").trim();
+        if (!id || !name) return;
+        if (fbsTeamIds.size && !fbsTeamIds.has(id)) return;
+
+        const fromStandings = fbsTeamMetaById.get(id);
+        const fromTeamPayload = pickFootballConference(entry, team);
+        const conference = fromStandings?.conference || fromTeamPayload || "Independent";
+        if (!fromStandings && !FBS_CONFERENCES.has(conference)) return;
+        const record = fromStandings?.record || pickRecordSummary(team) || "N/A";
+        const logo = getTeamLogoFromEspnObject(team) || `https://a.espncdn.com/i/teamlogos/ncaa/500/${id}.png`;
+
+        if (!byId.has(id)) {
+          byId.set(id, {
+            id,
+            name,
+            conference: FBS_CONFERENCES.has(conference) ? conference : "Independent",
+            logo,
+            record,
+            conferenceRecord: "N/A",
+            kenpomRank: "N/A",
+            netRank: "N/A",
+            apRank: "Unranked",
+            coachesRank: "Unranked",
+            lastGame: null,
+            nextGame: null
+          });
+        } else {
+          const existing = byId.get(id);
+          if ((!existing.logo || existing.logo.includes("/500/")) && logo) existing.logo = logo;
+          if ((!existing.record || existing.record === "N/A") && record && record !== "N/A") existing.record = record;
+          if ((existing.conference === "Independent" || !existing.conference) && conference) {
+            existing.conference = FBS_CONFERENCES.has(conference) ? conference : existing.conference;
+          }
+        }
+      });
+    } catch {
+      // Try next endpoint.
+    }
+  }
+
+  fbsTeamMetaById.forEach((meta, id) => {
+    if (byId.has(id)) return;
+    byId.set(id, {
+      id,
+      name: `Team ${id}`,
+      conference: meta?.conference || "Independent",
+      logo: `https://a.espncdn.com/i/teamlogos/ncaa/500/${id}.png`,
+      record: meta?.record || "N/A",
+      conferenceRecord: "N/A",
+      kenpomRank: "N/A",
+      netRank: "N/A",
+      apRank: "Unranked",
+      coachesRank: "Unranked",
+      lastGame: null,
+      nextGame: null
+    });
+  });
+
+  const list = [...byId.values()]
+    .filter(team => !/^Team \d+$/.test(team.name))
+    .sort((a, b) => a.name.localeCompare(b.name));
+  return list;
+}
+
+async function ensureFootballTeamsLoaded() {
+  if (footballTeamsMaster.length >= 120) return footballTeamsMaster;
+  footballTeamsMaster = await fetchFootballTeamsFromEspn();
+  return footballTeamsMaster;
+}
+
+function resetSportCaches() {
+  apPollLoadPromise = null;
+  coachesPollLoadPromise = null;
+  netRankingsLoadPromise = null;
+  netRankingsCache = null;
+  espnTeamLookupPromise = null;
+}
+
+function normalizePin(value) {
+  return String(value || "").replace(/[^0-9]/g, "").trim();
+}
+
+function clearTeamDynamicData() {
+  teams.forEach(team => {
+    team.record = "N/A";
+    team.conferenceRecord = "N/A";
+    team.kenpomRank = "N/A";
+    team.netRank = "N/A";
+    team.apRank = "Unranked";
+    team.coachesRank = "Unranked";
+    team.lastGame = null;
+    team.nextGame = null;
+  });
+}
+
+async function refreshDataForActivePin() {
+  resetSportCaches();
+  clearTeamDynamicData();
+  await hydrateFromRemoteIfAvailable();
+  applyStoredRecords();
+  ranking = loadCurrentRanking();
+  honorableMentions = loadHonorableMentions();
+  weeks = loadWeeks();
+  populateConfFilter();
+  renderRanking();
+  renderTeams();
+  updateChart();
+  renderWeekSelectors();
+  renderSavedListsMenu();
+  compareSelectedWeeks();
+  updateTrendChart();
+  changePinBtn.textContent = `PIN: ${activePin || "guest"}`;
+  if (activePin) registerLocalPin(activePin);
+  setAuthState(Boolean(activePin));
+}
+
+function openPinModal(force = false) {
+  if (force) setAuthState(false);
+  pinModal.style.display = "flex";
+  clearPinError();
+  pinInput.value = activePin || "";
+  setPinAuthMode("signin");
+  pinCancel.style.display = force ? "none" : "";
+  pinInput.focus();
+
+  return new Promise(resolve => {
+    let onSignInMode;
+    let onCreateMode;
+    const close = (result) => {
+      pinModal.style.display = "none";
+      pinConfirm.removeEventListener("click", onConfirm);
+      pinCancel.removeEventListener("click", onCancel);
+      pinModal.removeEventListener("click", onBackdrop);
+      pinModeSignIn.removeEventListener("click", onSignInMode);
+      pinModeCreate.removeEventListener("click", onCreateMode);
+      resolve(result);
+    };
+
+    const onConfirm = () => {
+      const pin = normalizePin(pinInput.value);
+      if (!pin) {
+        showPinError("Please enter a numeric PIN.");
+        return;
+      }
+      const runAuth = async () => {
+        clearPinError();
+        pinConfirm.disabled = true;
+        pinModeSignIn.disabled = true;
+        pinModeCreate.disabled = true;
+        const originalConfirm = pinConfirm.textContent;
+        pinConfirm.textContent = pinAuthMode === "create" ? "Creating..." : "Signing in...";
+
+        try {
+          if (!canUseRemoteApi()) {
+            if (pinAuthMode === "create") {
+              if (hasLocalProfileForPin(pin)) {
+                showPinError("PIN is taken. Choose another.");
+                return;
+              }
+              registerLocalPin(pin);
+              close(pin);
+              return;
+            }
+            if (!hasLocalProfileForPin(pin)) {
+              showPinError("PIN not found. Use New User to create it.");
+              return;
+            }
+            registerLocalPin(pin);
+            close(pin);
+            return;
+          }
+
+          if (pinAuthMode === "create") {
+            const result = await registerPinWithServer(pin);
+            if (!result.ok) {
+              if (result.code === "PIN_TAKEN") {
+                showPinError("PIN is taken. Choose another.");
+              } else {
+                showPinError("Could not create PIN right now. Try again.");
+              }
+              return;
+            }
+            registerLocalPin(pin);
+            close(pin);
+            return;
+          }
+
+          const login = await loginPinWithServer(pin);
+          if (!login.ok) {
+            if (login.code === "PIN_NOT_FOUND") {
+              showPinError("PIN not found. Use New User to create it.");
+            } else {
+              showPinError("Could not sign in right now. Try again.");
+            }
+            return;
+          }
+          registerLocalPin(pin);
+          close(pin);
+        } catch {
+          showPinError("Could not connect to the server. Try again.");
+        } finally {
+          pinConfirm.disabled = false;
+          pinModeSignIn.disabled = false;
+          pinModeCreate.disabled = false;
+          pinConfirm.textContent = originalConfirm;
+        }
+      };
+
+      void runAuth();
+    };
+
+    const onCancel = () => close(null);
+    const onBackdrop = (e) => {
+      if (!force && e.target === pinModal) close(null);
+    };
+    onSignInMode = () => {
+      clearPinError();
+      setPinAuthMode("signin");
+    };
+    onCreateMode = () => {
+      clearPinError();
+      setPinAuthMode("create");
+    };
+
+    pinConfirm.addEventListener("click", onConfirm);
+    pinCancel.addEventListener("click", onCancel);
+    pinModal.addEventListener("click", onBackdrop);
+    pinModeSignIn.addEventListener("click", onSignInMode);
+    pinModeCreate.addEventListener("click", onCreateMode);
+  });
+}
+
+function getSportLabel() {
+  return isBasketballSport() ? "Basketball" : "Football";
+}
+
+function updateSportUiText() {
+  appTitle.textContent = isBasketballSport()
+    ? "College Basketball Power Ranker"
+    : "College Football Power Ranker (FBS)";
+
+  const coachesOnlyOption = tierFilter.querySelector('option[value="coachesOnly"]');
+  if (coachesOnlyOption) {
+    coachesOnlyOption.textContent = isBasketballSport()
+      ? "Current Coaches Poll Only"
+      : "Current CFP Rankings Only";
+  }
+}
+
+function applyArchivedSports() {
+  if (!ARCHIVE_FOOTBALL) return;
+  const footballOption = sportToggle.querySelector('option[value="football"]');
+  if (footballOption) footballOption.remove();
+  if (currentSport !== "basketball") {
+    currentSport = "basketball";
+  }
+}
+
+applyStoredRecords();
+basketballTeamsMaster = [...teams];
+applyArchivedSports();
+sportToggle.value = currentSport;
+updateSportUiText();
+changePinBtn.textContent = `PIN: ${activePin || "guest"}`;
+
+setTimeout(async () => {
+  if (activePin) {
+    await refreshDataForActivePin();
+    return;
+  }
+  const pin = await openPinModal(true);
+  if (!pin) return;
+  activePin = pin;
+  sessionStorage.setItem(PIN_SESSION_KEY, activePin);
+  await refreshDataForActivePin();
+}, 0);
+
+async function switchSport(nextSport) {
+  if (!nextSport || nextSport === currentSport) return;
+  currentSport = nextSport;
+  updateSportUiText();
+
+  if (currentSport === "football") {
+    await ensureFootballTeamsLoaded();
+    setCurrentTeams(footballTeamsMaster);
+  } else {
+    setCurrentTeams(basketballTeamsMaster);
+  }
+  await refreshDataForActivePin();
+}
+
+sportToggle.addEventListener("change", async () => {
+  const prior = currentSport;
+  try {
+    await switchSport(sportToggle.value);
+  } catch (error) {
+    console.error(error);
+    alert(`Could not switch to ${sportToggle.value} right now.`);
+    currentSport = prior;
+    sportToggle.value = prior;
+    updateSportUiText();
+  }
+});
+
+logoutBtn.addEventListener("click", async () => {
+  activePin = "";
+  sessionStorage.removeItem(PIN_SESSION_KEY);
+  changePinBtn.textContent = "PIN";
+  setAuthState(false);
+  const pin = await openPinModal(true);
+  if (!pin) return;
+  activePin = pin;
+  sessionStorage.setItem(PIN_SESSION_KEY, activePin);
+  await refreshDataForActivePin();
+});
+
+modeToggle.onclick = () => {
+  document.body.classList.toggle("dark");
+  modeToggle.innerText = document.body.classList.contains("dark") ? "Light Mode" : "Dark Mode";
+  scheduleTrendRender();
+  scheduleConferenceRender();
+};
+
+document.getElementById("resetRanking").onclick = () => {
+  ranking = [];
+  honorableMentions = [];
+  persistCurrentRanking();
+  persistHonorableMentions();
+  renderRanking();
+  renderTeams();
+  updateChart();
+};
+
+document.getElementById("exportPDF").onclick = () => {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+  doc.setFontSize(16);
+  doc.text(`Top ${getSportLabel()} Power Rankings`, 105, 20, null, null, "center");
+
+  ranking.forEach((t, i) => {
+    doc.setFontSize(12);
+    doc.text(`#${i + 1} ${t.name} | ${t.record}`, 15, 30 + i * 10);
+  });
+
+  doc.save(`PowerRankings-${getSportLabel()}.pdf`);
+};
+
+document.getElementById("downloadTracker").onclick = () => {
+  const canvas = document.getElementById("trendChart");
+  if (!canvas) {
+    alert("Weekly tracker chart is not available.");
+    return;
+  }
+  const dataUrl = canvas.toDataURL("image/png");
+  const link = document.createElement("a");
+  link.href = dataUrl;
+  link.download = `WeeklyTracker-${getSportLabel()}.png`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+};
+
+document.getElementById("saveWeek").onclick = async () => {
+  if (!ranking.length) {
+    alert("Add teams to rankings before saving a week.");
+    return;
+  }
+
+  const defaultLabel = `Week ${weeks.length + 1}`;
+  const entered = prompt("Week label:", defaultLabel);
+  if (entered === null) return;
+
+  const label = entered.trim() || defaultLabel;
+  const savedAt = new Date().toISOString();
+  const defaultDate = normalizeRankingDate(savedAt);
+  const pickedDate = await openDatePickerModal(defaultDate);
+  if (!pickedDate) return;
+  const rankingDate = normalizeRankingDate(pickedDate);
+  weeks.push({
+    id: Date.now().toString(),
+    label,
+    rankingDate,
+    savedAt,
+    rankingNames: ranking.map(t => t.name),
+    honorableNames: honorableMentions.map(t => t.name)
+  });
+  sortWeeks();
+
+  persistWeeks();
+  renderWeekSelectors();
+  renderSavedListsMenu();
+  updateTrendChart();
+  alert(`Saved ${label}`);
+};
+
+savedListsBtn.onclick = (e) => {
+  e.stopPropagation();
+  const isOpen = savedListsMenu.style.display === "block";
+  savedListsMenu.style.display = isOpen ? "none" : "block";
+};
+
+savedListsMenu.addEventListener("click", e => {
+  e.stopPropagation();
+});
+
+document.addEventListener("click", () => {
+  savedListsMenu.style.display = "none";
+});
+
+teamDetailsClose.addEventListener("click", () => {
+  teamDetailsModal.style.display = "none";
+});
+
+teamDetailsModal.addEventListener("click", (e) => {
+  if (e.target === teamDetailsModal) {
+    teamDetailsModal.style.display = "none";
+  }
+});
+
+rankHelperBtn.addEventListener("click", async () => {
+  rankHelperModal.style.display = "flex";
+  rankHelperBody.innerHTML = `<div class="helperMeta">Preparing comparison questions...</div>`;
+  try {
+    await startRankHelper();
+  } catch (error) {
+    rankHelperBody.innerHTML = `<div class="helperMeta">Could not start rank helper right now.</div>`;
+    console.error(error);
+  }
+});
+
+rankHelperClose.addEventListener("click", () => {
+  rankHelperModal.style.display = "none";
+  rankHelperState = null;
+});
+
+rankHelperModal.addEventListener("click", (e) => {
+  if (e.target === rankHelperModal) {
+    rankHelperModal.style.display = "none";
+    rankHelperState = null;
+  }
+});
+
+updateRecordsBtn.onclick = async () => {
+  if (recordsUpdateInProgress) return;
+  recordsUpdateInProgress = true;
+  const originalText = updateRecordsBtn.textContent;
+  updateRecordsBtn.disabled = true;
+  updateRecordsBtn.textContent = "Updating...";
+
+  try {
+    const idHydration = await ensureTeamIdsFromEspn();
+    const conferenceResult = await updateConferenceRecordsFromEspn();
+    const result = await updateAllTeamRecords();
+    renderRanking();
+    renderTeams();
+    persistTeamRecords();
+    const notes = [];
+    if (isBasketballSport() && !result.kenpomLoaded) notes.push("KenPom unavailable");
+    if (isBasketballSport() && !result.netLoaded) notes.push("NET rankings unavailable (CBS/ESPN)");
+    if (!result.apLoaded) notes.push("AP poll unavailable");
+    if (!result.coachesLoaded) notes.push("Coaches poll unavailable");
+    if (idHydration.missing > 0) notes.push(`${idHydration.missing} team IDs missing`);
+    const noteText = notes.length ? ` (${notes.join(", ")})` : "";
+    alert(`Data update complete. Updated: ${result.updated}. Unchanged: ${result.unchanged}. Failed: ${result.failed}. Conference records updated: ${conferenceResult.updated}, failed: ${conferenceResult.failed}.${noteText}`);
+  } catch (error) {
+    alert("Could not update team records right now.");
+    console.error(error);
+  } finally {
+    updateRecordsBtn.disabled = false;
+    updateRecordsBtn.textContent = originalText;
+    recordsUpdateInProgress = false;
+  }
+};
+
+searchInput.oninput = renderTeams;
+confFilter.onchange = renderTeams;
+tierFilter.onchange = async () => {
+  if (tierFilter.value === "apOnly") {
+    await ensureApPollRanksLoaded();
+  } else if (tierFilter.value === "coachesOnly") {
+    await ensureCoachesPollRanksLoaded();
+  }
+  renderTeams();
+};
+sortFilter.onchange = renderTeams;
+
+availableDiv.ondragover = e => e.preventDefault();
+availableDiv.ondrop = e => {
+  const name = e.dataTransfer.getData("text");
+  const fromRanking = e.dataTransfer.getData("fromRanking");
+  const fromHonorable = e.dataTransfer.getData("fromHonorable");
+
+  if (fromRanking === "true" || fromHonorable === "true") {
+    removeTeamFromAllSlots(name);
+    persistCurrentRanking();
+    persistHonorableMentions();
+    renderRanking();
+    updateChart();
+  }
+
+  renderTeams();
+};
+
+rankingDiv.addEventListener("dragover", e => e.preventDefault());
+rankingDiv.addEventListener("drop", e => {
+  e.preventDefault();
+  const name = e.dataTransfer.getData("text");
+  const team = getTeamByName(name);
+  if (!team) return;
+  const targetSlot = e.target.closest(".rankSlot");
+  const targetHm = e.target.closest(".hmSlot");
+  if (targetSlot) {
+    const idx = Number(targetSlot.dataset.index || "0");
+    insertTeamIntoRanking(team, idx);
+  } else if (targetHm) {
+    const idx = Number(targetHm.dataset.index || "0");
+    insertTeamIntoHonorableMentions(team, idx);
+  } else {
+    insertTeamIntoRanking(team, ranking.length);
+  }
+
+  persistCurrentRanking();
+  persistHonorableMentions();
+  renderRanking();
+  renderTeams();
+  updateChart();
+});
+
+weekFromSelect.addEventListener("change", compareSelectedWeeks);
+weekToSelect.addEventListener("change", compareSelectedWeeks);
+
+function getTeamByName(name) {
+  return teams.find(t => t.name === name);
+}
+
+function readStoredTeamStats() {
+  try {
+    const raw = localStorage.getItem(getSportStorageKey("teamStats")) || localStorage.getItem(getSportStorageKey("records"));
+    if (!raw) return {};
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === "object" ? parsed : {};
+  } catch {
+    return {};
+  }
+}
+
+function buildRemoteSnapshot() {
+  const safeWeeks = Array.isArray(weeks) ? weeks.map(week => ({
+    id: String(week?.id || Date.now()),
+    label: String(week?.label || "").trim() || "Week",
+    rankingDate: normalizeRankingDate(week?.rankingDate || week?.savedAt || getTodayISODate()),
+    savedAt: typeof week?.savedAt === "string" ? week.savedAt : new Date().toISOString(),
+    rankingNames: Array.isArray(week?.rankingNames) ? week.rankingNames.filter(name => typeof name === "string") : [],
+    honorableNames: Array.isArray(week?.honorableNames) ? week.honorableNames.filter(name => typeof name === "string") : []
+  })) : [];
+
+  return {
+    currentRanking: ranking.map(team => team.name),
+    honorableMentions: honorableMentions.map(team => team.name),
+    weeks: safeWeeks,
+    teamStats: readStoredTeamStats()
+  };
+}
+
+async function pushRemoteSnapshotNow() {
+  if (!canUseRemoteSync()) return;
+  if (remoteSyncInFlight) {
+    remoteSyncPending = true;
+    return;
+  }
+
+  remoteSyncInFlight = true;
+  const contextToken = getRemoteContextToken();
+  const pin = activePin;
+  const sport = getRemoteSportKey();
+  const payload = { profile: buildRemoteSnapshot() };
+
+  try {
+    await fetch(`${REMOTE_SYNC_API_BASE}/profile/${encodeURIComponent(pin)}/${sport}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+  } catch {
+    // Keep local behavior as fallback if remote sync fails.
+  } finally {
+    remoteSyncInFlight = false;
+    if (remoteSyncPending && contextToken === getRemoteContextToken()) {
+      remoteSyncPending = false;
+      void pushRemoteSnapshotNow();
+    } else {
+      remoteSyncPending = false;
+    }
+  }
+}
+
+function scheduleRemoteSync() {
+  if (!canUseRemoteSync()) return;
+  if (remoteSyncSaveTimer) clearTimeout(remoteSyncSaveTimer);
+  remoteSyncSaveTimer = setTimeout(() => {
+    remoteSyncSaveTimer = null;
+    void pushRemoteSnapshotNow();
+  }, 700);
+}
+
+function writeRemoteProfileToLocal(profile) {
+  const rankingNames = Array.isArray(profile?.currentRanking) ? profile.currentRanking.filter(name => typeof name === "string") : [];
+  const hmNames = Array.isArray(profile?.honorableMentions) ? profile.honorableMentions.filter(name => typeof name === "string") : [];
+  const weekList = Array.isArray(profile?.weeks) ? profile.weeks.map(normalizeWeek).filter(Boolean) : [];
+  const stats = profile?.teamStats && typeof profile.teamStats === "object" ? profile.teamStats : {};
+
+  localStorage.setItem(getSportStorageKey("currentRanking"), JSON.stringify(rankingNames));
+  localStorage.setItem(getSportStorageKey("honorableMentions"), JSON.stringify(hmNames));
+  localStorage.setItem(getSportStorageKey("weeks"), JSON.stringify(weekList));
+  localStorage.setItem(getSportStorageKey("teamStats"), JSON.stringify(stats));
+}
+
+async function hydrateFromRemoteIfAvailable() {
+  if (!canUseRemoteSync()) return;
+  const pin = activePin;
+  const sport = getRemoteSportKey();
+  const contextToken = getRemoteContextToken();
+
+  try {
+    const res = await fetch(`${REMOTE_SYNC_API_BASE}/profile/${encodeURIComponent(pin)}/${sport}`, {
+      cache: "no-store"
+    });
+    if (!res.ok) return;
+    const data = await res.json();
+    if (contextToken !== getRemoteContextToken()) return;
+    if (data?.profile && typeof data.profile === "object") {
+      writeRemoteProfileToLocal(data.profile);
+      return;
+    }
+    // Seed new remote profile with existing local data.
+    scheduleRemoteSync();
+  } catch {
+    // Remote unavailable; keep local-only behavior.
+  }
+}
+
+function loadCurrentRanking() {
+  try {
+    const raw = localStorage.getItem(getSportStorageKey("currentRanking"));
+    if (!raw) return [];
+    const names = JSON.parse(raw);
+    if (!Array.isArray(names)) return [];
+    return names.map(getTeamByName).filter(Boolean).slice(0, 25);
+  } catch {
+    return [];
+  }
+}
+
+function loadHonorableMentions() {
+  try {
+    const raw = localStorage.getItem(getSportStorageKey("honorableMentions"));
+    if (!raw) return [];
+    const names = JSON.parse(raw);
+    if (!Array.isArray(names)) return [];
+    return names.map(getTeamByName).filter(Boolean).slice(0, 5);
+  } catch {
+    return [];
+  }
+}
+
+function persistCurrentRanking() {
+  const names = ranking.map(t => t.name);
+  localStorage.setItem(getSportStorageKey("currentRanking"), JSON.stringify(names));
+  scheduleRemoteSync();
+}
+
+function persistHonorableMentions() {
+  const names = honorableMentions.map(t => t.name);
+  localStorage.setItem(getSportStorageKey("honorableMentions"), JSON.stringify(names));
+  scheduleRemoteSync();
+}
+
+function removeTeamFromAllSlots(teamName) {
+  ranking = ranking.filter(t => t.name !== teamName);
+  honorableMentions = honorableMentions.filter(t => t.name !== teamName);
+}
+
+function insertTeamIntoRanking(team, index) {
+  removeTeamFromAllSlots(team.name);
+  const idx = Math.max(0, Math.min(index, ranking.length));
+  ranking.splice(idx, 0, team);
+  if (ranking.length > 25) {
+    const overflow = ranking.slice(25);
+    ranking = ranking.slice(0, 25);
+    overflow.forEach(item => {
+      if (honorableMentions.find(t => t.name === item.name)) return;
+      honorableMentions.push(item);
+    });
+    honorableMentions = honorableMentions.slice(0, 5);
+  }
+}
+
+function insertTeamIntoHonorableMentions(team, index) {
+  removeTeamFromAllSlots(team.name);
+  const idx = Math.max(0, Math.min(index, honorableMentions.length));
+  honorableMentions.splice(idx, 0, team);
+  honorableMentions = honorableMentions.slice(0, 5);
+}
+
+function loadWeeks() {
+  try {
+    const raw = localStorage.getItem(getSportStorageKey("weeks"));
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    const normalized = parsed
+      .map(normalizeWeek)
+      .filter(Boolean);
+    normalized.sort((a, b) => {
+      const byDate = a.rankingDate.localeCompare(b.rankingDate);
+      if (byDate !== 0) return byDate;
+      return a.savedAt.localeCompare(b.savedAt);
+    });
+    return normalized;
+  } catch {
+    return [];
+  }
+}
+
+function persistWeeks() {
+  localStorage.setItem(getSportStorageKey("weeks"), JSON.stringify(weeks));
+  scheduleRemoteSync();
+}
+
+function formatSavedDate(iso) {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return "";
+  return date.toLocaleString();
+}
+
+function formatRankingDate(dateText) {
+  const date = new Date(`${dateText}T12:00:00`);
+  if (Number.isNaN(date.getTime())) return dateText || "";
+  return date.toLocaleDateString();
+}
+
+function getTodayISODate() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function normalizeRankingDate(value) {
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return getTodayISODate();
+  return parsed.toISOString().slice(0, 10);
+}
+
+function loadStoredRecordsMap() {
+  return readStoredTeamStats();
+}
+
+function applyStoredRecords() {
+  const records = loadStoredRecordsMap();
+  teams.forEach(team => {
+    const saved = records[team.name];
+    if (!saved) return;
+
+    if (typeof saved === "string") {
+      if (saved.trim()) team.record = saved.trim();
+      return;
+    }
+
+    if (typeof saved.record === "string" && saved.record.trim()) team.record = saved.record.trim();
+    if (typeof saved.conferenceRecord === "string" && saved.conferenceRecord.trim()) team.conferenceRecord = saved.conferenceRecord.trim();
+    if (typeof saved.kenpomRank === "string" && saved.kenpomRank.trim()) team.kenpomRank = saved.kenpomRank.trim();
+    else if (typeof saved.bpiRank === "string" && saved.bpiRank.trim()) team.kenpomRank = saved.bpiRank.trim();
+    if (typeof saved.netRank === "string" && saved.netRank.trim()) team.netRank = saved.netRank.trim();
+    if (typeof saved.apRank === "string" && saved.apRank.trim()) team.apRank = saved.apRank.trim();
+    if (typeof saved.coachesRank === "string" && saved.coachesRank.trim()) team.coachesRank = saved.coachesRank.trim();
+    if (saved.lastGame && typeof saved.lastGame === "object") team.lastGame = saved.lastGame;
+    if (saved.nextGame && typeof saved.nextGame === "object") team.nextGame = saved.nextGame;
+  });
+}
+
+function persistTeamRecords() {
+  const records = {};
+  teams.forEach(team => {
+    records[team.name] = {
+      record: team.record || "N/A",
+      conferenceRecord: team.conferenceRecord || "N/A",
+      kenpomRank: team.kenpomRank || "N/A",
+      netRank: team.netRank || "N/A",
+      apRank: team.apRank || "Unranked",
+      coachesRank: team.coachesRank || "Unranked",
+      lastGame: team.lastGame || null,
+      nextGame: team.nextGame || null
+    };
+  });
+  localStorage.setItem(getSportStorageKey("teamStats"), JSON.stringify(records));
+  scheduleRemoteSync();
+}
+
+function getEspnTeamId(team) {
+  if (team?.id) return String(team.id);
+  const match = String(team.logo || "").match(/\/500\/(\d+)\.(png|svg)/i);
+  return match ? match[1] : null;
+}
+
+function pickRecordSummary(payload) {
+  const paths = [
+    payload?.team?.record?.items?.[0]?.summary,
+    payload?.team?.record?.summary,
+    payload?.record?.items?.[0]?.summary,
+    payload?.record?.summary,
+    payload?.team?.standingSummary
+  ];
+  for (const value of paths) {
+    if (typeof value === "string" && value.trim()) return value.trim();
+  }
+  return null;
+}
+
+async function fetchTeamRecordFromEspn(teamId) {
+  const url = `https://site.api.espn.com/apis/site/v2/sports/${getSportApiPath()}/teams/${teamId}`;
+  const response = await fetch(url);
+  if (!response.ok) return null;
+  const data = await response.json();
+  return pickRecordSummary(data);
+}
+
+function normalizeTeamLookupName(name) {
+  return String(name || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+}
+
+function teamNameVariants(name) {
+  const raw = String(name || "");
+  const variants = new Set([raw]);
+
+  variants.add(raw.replace(/\bSaint\b/g, "St."));
+  variants.add(raw.replace(/\bSt\.\b/g, "Saint"));
+  variants.add(raw.replace(/\bState\b/g, "St."));
+  variants.add(raw.replace(/\bSt\.\b/g, "State"));
+  variants.add(raw.replace(/\bUniversity\b/g, "U"));
+  variants.add(raw.replace(/&/g, "and"));
+
+  return [...variants]
+    .map(v => normalizeTeamLookupName(v))
+    .filter(Boolean);
+}
+
+function collectTeamNameCandidates(teamLike) {
+  const rawNames = [
+    teamLike?.name,
+    teamLike?.shortDisplayName,
+    teamLike?.displayName,
+    teamLike?.nickname,
+    [teamLike?.location, teamLike?.name].filter(Boolean).join(" "),
+    [teamLike?.location, teamLike?.nickname].filter(Boolean).join(" ")
+  ].filter(Boolean);
+
+  const out = new Set();
+  rawNames.forEach(name => {
+    teamNameVariants(name).forEach(v => out.add(v));
+  });
+  return [...out];
+}
+
+let espnTeamLookupPromise = null;
+async function getEspnTeamLookup() {
+  if (espnTeamLookupPromise) return espnTeamLookupPromise;
+
+  espnTeamLookupPromise = (async () => {
+    const endpoint = isBasketballSport()
+      ? "https://site.api.espn.com/apis/site/v2/sports/basketball/mens-college-basketball/teams?limit=500"
+      : "https://site.api.espn.com/apis/site/v2/sports/football/college-football/teams?groups=80&limit=500";
+    const response = await fetch(endpoint);
+    if (!response.ok) throw new Error(`teams lookup failed: ${response.status}`);
+    const payload = await response.json();
+    const entries = payload?.sports?.[0]?.leagues?.[0]?.teams || [];
+    const byName = new Map();
+
+    entries.forEach(entry => {
+      const team = entry?.team || {};
+      const id = String(team.id || "");
+      if (!id) return;
+      collectTeamNameCandidates(team).forEach(key => {
+        if (!byName.has(key)) byName.set(key, id);
+      });
+    });
+
+    return byName;
+  })().catch(error => {
+    espnTeamLookupPromise = null;
+    throw error;
+  });
+
+  return espnTeamLookupPromise;
+}
+
+async function ensureTeamIdsFromEspn() {
+  let hydrated = 0;
+  const missing = teams.filter(team => !team.id);
+  if (!missing.length) return { hydrated, missing: 0 };
+
+  const lookup = await getEspnTeamLookup();
+  missing.forEach(team => {
+    const candidates = collectTeamNameCandidates(team);
+    const found = candidates.map(key => lookup.get(key)).find(Boolean);
+    if (found) {
+      team.id = String(found);
+      hydrated++;
+    }
+  });
+
+  return { hydrated, missing: teams.filter(team => !team.id).length };
+}
+
+function parseRankingsFromHtml(htmlText) {
+  const doc = new DOMParser().parseFromString(htmlText, "text/html");
+  const rows = [...doc.querySelectorAll("tr")];
+  const result = new Map();
+
+  rows.forEach(row => {
+    const cells = [...row.querySelectorAll("th,td")];
+    if (cells.length < 2) return;
+    const texts = cells.map(cell => cell.textContent.replace(/\s+/g, " ").trim()).filter(Boolean);
+    if (!texts.length) return;
+
+    let rank = null;
+    for (const text of texts) {
+      const match = text.match(/^#?\s*(\d{1,3})$/);
+      if (match) {
+        rank = Number(match[1]);
+        break;
+      }
+    }
+    if (!rank) return;
+
+    const teamText = texts.find(text => /[a-zA-Z]/.test(text) && !/^#?\s*\d{1,3}$/.test(text));
+    if (!teamText) return;
+
+    const key = normalizeTeamLookupName(teamText);
+    if (!key) return;
+    if (!result.has(key)) result.set(key, String(rank));
+  });
+
+  return result;
+}
+
+async function fetchKenPomRankingsMap() {
+  if (!isBasketballSport()) return { map: new Map(), loaded: false };
+  try {
+    const response = await fetch("https://kenpom.com/");
+    if (!response.ok) return { map: new Map(), loaded: false };
+    const html = await response.text();
+    const map = parseRankingsFromHtml(html);
+    return { map, loaded: map.size > 0 };
+  } catch {
+    return { map: new Map(), loaded: false };
+  }
+}
+
+async function fetchCbsNetRankingsMap() {
+  if (!isBasketballSport()) {
+    return { byName: new Map(), byId: new Map(), loaded: false, source: "none" };
+  }
+  try {
+    const pageUrl = "https://www.cbssports.com/college-basketball/rankings/net/";
+    const endpoints = [
+      pageUrl,
+      `https://api.allorigins.win/raw?url=${encodeURIComponent(pageUrl)}`,
+      "https://r.jina.ai/http://www.cbssports.com/college-basketball/rankings/net/"
+    ];
+
+    for (const endpoint of endpoints) {
+      try {
+        const response = await fetch(endpoint);
+        if (!response.ok) continue;
+        const html = await response.text();
+        const map = parseRankingsFromHtml(html);
+        if (map.size > 0) return { byName: map, byId: new Map(), loaded: true, source: "cbs" };
+      } catch {
+        // Try next endpoint.
+      }
+    }
+    return { byName: new Map(), byId: new Map(), loaded: false, source: "none" };
+  } catch {
+    return { byName: new Map(), byId: new Map(), loaded: false, source: "none" };
+  }
+}
+
+function collectRankEntriesFromNode(node, byName, byId) {
+  const walk = (value) => {
+    if (!value || typeof value !== "object") return;
+    if (Array.isArray(value)) {
+      value.forEach(walk);
+      return;
+    }
+
+    const rank = value.current || value.rank || value.ranking || value.position;
+    const team = value.team || value;
+    const teamId = String(team?.id || value?.id || "");
+    const teamName = team?.shortDisplayName || team?.displayName || team?.name;
+    if (teamName && rank && String(rank).match(/^\d+$/)) {
+      const normalizedName = normalizeTeamLookupName(teamName);
+      const rankText = String(rank);
+      if (normalizedName && !byName.has(normalizedName)) byName.set(normalizedName, rankText);
+      if (teamId && !byId.has(teamId)) byId.set(teamId, rankText);
+    }
+
+    Object.values(value).forEach(walk);
+  };
+  walk(node);
+}
+
+function parseEspnNetRankings(payload) {
+  const byName = new Map();
+  const byId = new Map();
+
+  const walk = (node) => {
+    if (!node || typeof node !== "object") return;
+    if (Array.isArray(node)) {
+      node.forEach(walk);
+      return;
+    }
+
+    const label = String(node?.name || node?.displayName || node?.shortName || node?.abbreviation || "").toLowerCase();
+    if (label.includes("net")) {
+      collectRankEntriesFromNode(node, byName, byId);
+    }
+
+    Object.values(node).forEach(walk);
+  };
+  walk(payload);
+  return { byName, byId };
+}
+
+async function fetchEspnNetRankingsMap() {
+  if (!isBasketballSport()) {
+    return { byName: new Map(), byId: new Map(), loaded: false, source: "none" };
+  }
+  const endpoints = [
+    "https://site.api.espn.com/apis/site/v2/sports/basketball/mens-college-basketball/rankings",
+    "https://site.web.api.espn.com/apis/v2/sports/basketball/mens-college-basketball/rankings"
+  ];
+
+  for (const endpoint of endpoints) {
+    try {
+      const response = await fetch(endpoint);
+      if (!response.ok) continue;
+      const payload = await response.json();
+      const parsed = parseEspnNetRankings(payload);
+      if (parsed.byName.size > 0 || parsed.byId.size > 0) {
+        return { ...parsed, loaded: true, source: "espn" };
+      }
+    } catch {
+      // Try next endpoint.
+    }
+  }
+
+  return { byName: new Map(), byId: new Map(), loaded: false, source: "none" };
+}
+
+async function fetchNetRankingsFromTeamDetailsApi() {
+  if (!isBasketballSport()) {
+    return { byName: new Map(), byId: new Map(), loaded: false, source: "none" };
+  }
+
+  const byName = new Map();
+  const byId = new Map();
+
+  try {
+    await ensureTeamIdsFromEspn();
+  } catch {
+    // Continue with any IDs we already have.
+  }
+
+  const candidates = teams.filter(team => !!getEspnTeamId(team));
+  if (!candidates.length) {
+    return { byName, byId, loaded: false, source: "none" };
+  }
+
+  await runWithConcurrency(candidates, 8, async team => {
+    try {
+      const teamId = getEspnTeamId(team);
+      if (!teamId) return;
+      const payload = await fetchTeamDetailsFromEspn(teamId);
+      if (!payload) return;
+      const net = pickNetRank(payload);
+      if (!net || net === "N/A") return;
+      const normalizedName = normalizeTeamLookupName(team.name);
+      if (normalizedName && !byName.has(normalizedName)) byName.set(normalizedName, String(net));
+      if (!byId.has(String(teamId))) byId.set(String(teamId), String(net));
+    } catch {
+      // Skip this team.
+    }
+  });
+
+  return {
+    byName,
+    byId,
+    loaded: byName.size > 0 || byId.size > 0,
+    source: "espn-team-api"
+  };
+}
+
+async function fetchNetRankingsMap() {
+  const cbs = await fetchCbsNetRankingsMap();
+  if (cbs.loaded) return cbs;
+  const espnRankings = await fetchEspnNetRankingsMap();
+  if (espnRankings.loaded) return espnRankings;
+  return fetchNetRankingsFromTeamDetailsApi();
+}
+
+async function ensureNetRankingsLoaded() {
+  if (!isBasketballSport()) {
+    return { byName: new Map(), byId: new Map(), loaded: false, source: "none" };
+  }
+  if (netRankingsCache && netRankingsCache.loaded) return netRankingsCache;
+  if (netRankingsLoadPromise) return netRankingsLoadPromise;
+
+  netRankingsLoadPromise = (async () => {
+    const source = await fetchNetRankingsMap();
+    netRankingsCache = source;
+    return source;
+  })().finally(() => {
+    netRankingsLoadPromise = null;
+  });
+
+  return netRankingsLoadPromise;
+}
+
+function lookupNetRankForTeam(source, team) {
+  if (!source) return null;
+  const teamId = getEspnTeamId(team);
+  const byId = teamId ? source.byId?.get(String(teamId)) : null;
+  const byName = lookupRankForTeam(source.byName, team.name);
+  return byId || byName || null;
+}
+
+function lookupRankForTeam(rankMap, teamName) {
+  if (!rankMap || !rankMap.size) return null;
+  const keys = teamNameVariants(teamName);
+  for (const key of keys) {
+    if (rankMap.has(key)) return rankMap.get(key);
+  }
+  return null;
+}
+
+function formatDateKey(date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}${month}${day}`;
+}
+
+function parseCbsTeamRow(line) {
+  if (!line || !line.includes("|")) return null;
+  const parts = line.split("|").map(p => p.trim());
+  if (parts.length < 2) return null;
+
+  const first = String(parts[0] || "").replace(/\s+/g, " ").trim();
+  if (!first) return null;
+  if (/^odds|^line|^spread|^total|^location|^tv/i.test(first)) return null;
+
+  const namePart = first
+    .replace(/^\d+\s+/, "")
+    .replace(/\s+\(\d+\)\s*$/, "")
+    .replace(/\d{1,2}-\d{1,2}\s*$/, "")
+    .trim();
+  if (!namePart || !/[A-Za-z]/.test(namePart)) return null;
+
+  const numericTokens = parts
+    .slice(1)
+    .map(p => p.replace(/,/g, "").trim())
+    .filter(p => /^\d{1,3}$/.test(p))
+    .map(Number);
+  const score = numericTokens.length ? numericTokens[numericTokens.length - 1] : null;
+
+  return {
+    teamName: namePart,
+    score: Number.isFinite(score) ? score : null
+  };
+}
+
+function parseCbsGamesFromText(text, dayDate) {
+  const lines = String(text || "")
+    .split("\n")
+    .map(line => line.replace(/\s+/g, " ").trim())
+    .filter(Boolean);
+
+  const games = [];
+  let pair = [];
+  let statusHint = "";
+
+  lines.forEach(line => {
+    if (/^final$/i.test(line) || /^final\s/i.test(line)) {
+      statusHint = "final";
+      return;
+    }
+    if (/^in progress$/i.test(line) || /^in\s*\d/i.test(line)) {
+      statusHint = "live";
+      return;
+    }
+    if (/^preview$/i.test(line) || /^scheduled$/i.test(line)) {
+      statusHint = "scheduled";
+      return;
+    }
+
+    const row = parseCbsTeamRow(line);
+    if (!row) return;
+
+    pair.push(row);
+    if (pair.length === 2) {
+      const away = pair[0];
+      const home = pair[1];
+      const hasScore = Number.isFinite(away.score) && Number.isFinite(home.score);
+      games.push({
+        dateMs: dayDate.getTime(),
+        awayTeam: away.teamName,
+        homeTeam: home.teamName,
+        awayScore: hasScore ? away.score : null,
+        homeScore: hasScore ? home.score : null,
+        status: hasScore ? "final" : statusHint || "scheduled"
+      });
+      pair = [];
+      statusHint = "";
+    }
+  });
+
+  return games;
+}
+
+async function fetchCbsScoreboardDayGames(dayDate) {
+  const dayKey = formatDateKey(dayDate);
+  const primary = `https://www.cbssports.com/college-basketball/scoreboard/NCAA/${dayKey}/`;
+  const endpoints = [
+    primary,
+    `https://api.allorigins.win/raw?url=${encodeURIComponent(primary)}`,
+    `https://r.jina.ai/http://www.cbssports.com/college-basketball/scoreboard/NCAA/${dayKey}/`
+  ];
+
+  for (const endpoint of endpoints) {
+    try {
+      const response = await fetch(endpoint);
+      if (!response.ok) continue;
+      const body = await response.text();
+      const games = parseCbsGamesFromText(body, dayDate);
+      if (games.length) return games;
+    } catch {
+      // Try next endpoint.
+    }
+  }
+
+  return [];
+}
+
+function chooseBestTeamAlias(rawName, teamName) {
+  const normalizedRaw = normalizeTeamLookupName(rawName);
+  const teamKeys = teamNameVariants(teamName);
+  if (teamKeys.includes(normalizedRaw)) return teamName;
+  return rawName;
+}
+
+async function getCbsGameWindow() {
+  const now = Date.now();
+  if (cbsGameWindowPromise) return cbsGameWindowPromise;
+  if (cbsGameWindowLoadedAt && (now - cbsGameWindowLoadedAt) < (60 * 60 * 1000) && cbsGameWindowCache.length) {
+    return cbsGameWindowCache;
+  }
+
+  cbsGameWindowPromise = (async () => {
+    const tasks = [];
+    for (let offset = -10; offset <= 10; offset++) {
+      const d = new Date();
+      d.setDate(d.getDate() + offset);
+      d.setHours(12, 0, 0, 0);
+      tasks.push(fetchCbsScoreboardDayGames(d));
+    }
+
+    const dayResults = await Promise.all(tasks);
+    const allGames = dayResults.flat();
+    cbsGameWindowCache = allGames;
+    cbsGameWindowLoadedAt = Date.now();
+    return allGames;
+  })().finally(() => {
+    cbsGameWindowPromise = null;
+  });
+
+  return cbsGameWindowPromise;
+}
+
+async function fetchLastAndNextGameFromCbs(teamName) {
+  if (!isBasketballSport()) return { lastGame: null, nextGame: null };
+  try {
+    const allGames = await getCbsGameWindow();
+    if (!Array.isArray(allGames) || !allGames.length) return { lastGame: null, nextGame: null };
+
+    const now = Date.now();
+    const teamKeys = new Set(teamNameVariants(teamName));
+    const candidates = allGames.filter(game => {
+      const away = normalizeTeamLookupName(game.awayTeam);
+      const home = normalizeTeamLookupName(game.homeTeam);
+      return teamKeys.has(away) || teamKeys.has(home);
+    });
+
+    if (!candidates.length) return { lastGame: null, nextGame: null };
+
+    let last = null;
+    let next = null;
+
+    candidates.forEach(game => {
+      const awayKey = normalizeTeamLookupName(game.awayTeam);
+      const homeKey = normalizeTeamLookupName(game.homeTeam);
+      const isAway = teamKeys.has(awayKey);
+      const isHome = !isAway && teamKeys.has(homeKey);
+      if (!isAway && !isHome) return;
+
+      const opponentName = isAway ? game.homeTeam : game.awayTeam;
+      const prefix = isAway ? "@" : "vs";
+      const hasScore = Number.isFinite(game.awayScore) && Number.isFinite(game.homeScore);
+      const teamScore = isAway ? game.awayScore : game.homeScore;
+      const oppScore = isAway ? game.homeScore : game.awayScore;
+      const played = hasScore && game.dateMs <= now;
+      const upcoming = game.dateMs >= now && !hasScore;
+
+      if (played) {
+        if (!last || game.dateMs > last.dateMs) {
+          last = {
+            dateMs: game.dateMs,
+            data: {
+              opponent: chooseBestTeamAlias(opponentName, teamName),
+              locationPrefix: prefix,
+              result: teamScore > oppScore ? "W" : teamScore < oppScore ? "L" : "T",
+              score: `${teamScore}-${oppScore}`,
+              date: new Date(game.dateMs).toISOString()
+            }
+          };
+        }
+      }
+
+      if (upcoming) {
+        if (!next || game.dateMs < next.dateMs) {
+          next = {
+            dateMs: game.dateMs,
+            data: {
+              opponent: chooseBestTeamAlias(opponentName, teamName),
+              locationPrefix: prefix,
+              date: new Date(game.dateMs).toISOString(),
+              status: "Scheduled"
+            }
+          };
+        }
+      }
+    });
+
+    return {
+      lastGame: last ? last.data : null,
+      nextGame: next ? next.data : null
+    };
+  } catch {
+    return { lastGame: null, nextGame: null };
+  }
+}
+
+function apRankNumber(apRankValue) {
+  return pollRankNumber(apRankValue);
+}
+
+function coachesRankNumber(coachesRankValue) {
+  return pollRankNumber(coachesRankValue);
+}
+
+function pollRankNumber(value) {
+  const match = String(value || "").trim().match(/^#?\s*(\d+)$/);
+  if (!match) return null;
+  const n = Number(match[1]);
+  return Number.isFinite(n) ? n : null;
+}
+
+function pollVotesNumber(value) {
+  const match = String(value || "").match(/recieving\s+votes\s*\((\d+)\)/i);
+  if (!match) return null;
+  const n = Number(match[1]);
+  return Number.isFinite(n) ? n : null;
+}
+
+async function ensureApPollRanksLoaded() {
+  const hasSomeApData = teams.some(team => apRankNumber(team.apRank) !== null);
+  if (hasSomeApData) return true;
+  if (apPollLoadPromise) return apPollLoadPromise;
+
+  apPollLoadPromise = (async () => {
+    const apSource = await fetchApPollRankingsMap();
+    if (!apSource.loaded) return false;
+
+    teams.forEach(team => {
+      const teamId = getEspnTeamId(team);
+      const byId = teamId ? apSource.byId.get(String(teamId)) : null;
+      const byName = lookupRankForTeam(apSource.byName, team.name);
+      team.apRank = byId || byName || "Unranked";
+    });
+    persistTeamRecords();
+    return true;
+  })().finally(() => {
+    apPollLoadPromise = null;
+  });
+
+  return apPollLoadPromise;
+}
+
+async function ensureCoachesPollRanksLoaded() {
+  const hasSomeCoachesData = teams.some(team => coachesRankNumber(team.coachesRank) !== null);
+  if (hasSomeCoachesData) return true;
+  if (coachesPollLoadPromise) return coachesPollLoadPromise;
+
+  coachesPollLoadPromise = (async () => {
+    const coachesSource = isBasketballSport()
+      ? await fetchCoachesPollRankingsMap()
+      : await fetchCfpRankingsMap();
+    if (!coachesSource.loaded) return false;
+
+    teams.forEach(team => {
+      const teamId = getEspnTeamId(team);
+      const byId = teamId ? coachesSource.byId.get(String(teamId)) : null;
+      const byName = lookupRankForTeam(coachesSource.byName, team.name);
+      team.coachesRank = byId || byName || "Unranked";
+    });
+    persistTeamRecords();
+    return true;
+  })().finally(() => {
+    coachesPollLoadPromise = null;
+  });
+
+  return coachesPollLoadPromise;
+}
+
+function parsePollRankings(payload, pollMatcher) {
+  const byName = new Map();
+  const byId = new Map();
+  let inTargetPoll = false;
+
+  const walk = (node) => {
+    if (!node || typeof node !== "object") return;
+    if (Array.isArray(node)) {
+      node.forEach(walk);
+      return;
+    }
+
+    const previousTargetState = inTargetPoll;
+    const pollLabelCandidates = [
+      node?.name,
+      node?.displayName,
+      node?.shortName,
+      node?.description,
+      node?.label,
+      node?.type,
+      node?.id
+    ];
+    if (pollLabelCandidates.some(value => pollMatcher(value))) {
+      inTargetPoll = true;
+    }
+
+    const rank = node.current || node.rank || node.ranking || node.position;
+    const team = node.team || node;
+    const teamId = String(team?.id || node?.id || "");
+    const teamName = team?.shortDisplayName || team?.displayName || team?.name;
+    if (inTargetPoll && teamName && rank && String(rank).match(/^\d+$/)) {
+      const value = `#${rank}`;
+      byName.set(normalizeTeamLookupName(teamName), value);
+      if (teamId) byId.set(teamId, value);
+    } else if (inTargetPoll && teamName) {
+      const rvCandidates = [
+        node?.points,
+        node?.votes,
+        node?.receivingVotes,
+        team?.points,
+        team?.votes,
+        team?.receivingVotes
+      ];
+      const rv = rvCandidates
+        .map(v => (v === null || v === undefined ? NaN : Number(v)))
+        .find(v => Number.isFinite(v) && v > 0);
+
+      if (Number.isFinite(rv)) {
+        const value = `Recieving Votes (${Math.round(rv)})`;
+        byName.set(normalizeTeamLookupName(teamName), value);
+        if (teamId) byId.set(teamId, value);
+      }
+    }
+
+    Object.values(node).forEach(value => {
+      if (value && typeof value === "object") walk(value);
+    });
+
+    inTargetPoll = previousTargetState;
+  };
+
+  walk(payload);
+  return { byName, byId };
+}
+
+function parseApPollRankings(payload) {
+  return parsePollRankings(payload, value => /\bap\b|associated\s*press/i.test(String(value || "")));
+}
+
+function parseCoachesPollRankings(payload) {
+  return parsePollRankings(payload, value => /coaches|usa\s*today/i.test(String(value || "")));
+}
+
+function parseCfpRankings(payload) {
+  return parsePollRankings(payload, value => /college\s*football\s*playoff|\bcfp\b/i.test(String(value || "")));
+}
+
+async function fetchPollRankingsMap(parseFn) {
+  const endpoints = [
+    `https://site.api.espn.com/apis/site/v2/sports/${getSportApiPath()}/rankings`,
+    `https://site.web.api.espn.com/apis/v2/sports/${getSportApiPath()}/rankings`
+  ];
+
+  for (const endpoint of endpoints) {
+    try {
+      const response = await fetch(endpoint);
+      if (!response.ok) continue;
+      const payload = await response.json();
+      const parsed = parseFn(payload);
+      if (parsed.byName.size > 0 || parsed.byId.size > 0) return { ...parsed, loaded: true };
+    } catch {
+      // Try next endpoint.
+    }
+  }
+
+  return { byName: new Map(), byId: new Map(), loaded: false };
+}
+
+async function fetchApPollRankingsMap() {
+  return fetchPollRankingsMap(parseApPollRankings);
+}
+
+async function fetchCoachesPollRankingsMap() {
+  return fetchPollRankingsMap(parseCoachesPollRankings);
+}
+
+async function fetchCfpRankingsMap() {
+  return fetchPollRankingsMap(parseCfpRankings);
+}
+
+async function fetchTeamDetailsFromEspn(teamId) {
+  const url = `https://site.api.espn.com/apis/site/v2/sports/${getSportApiPath()}/teams/${teamId}`;
+  const response = await fetch(url);
+  if (!response.ok) return null;
+  return response.json();
+}
+
+async function runWithConcurrency(items, limit, worker) {
+  const results = [];
+  let index = 0;
+
+  async function runner() {
+    while (index < items.length) {
+      const current = index++;
+      results[current] = await worker(items[current], current);
+    }
+  }
+
+  const workers = [];
+  const count = Math.min(limit, items.length);
+  for (let i = 0; i < count; i++) workers.push(runner());
+  await Promise.all(workers);
+  return results;
+}
+
+async function updateAllTeamRecords() {
+  let updated = 0;
+  let unchanged = 0;
+  let failed = 0;
+
+  if (!isBasketballSport()) {
+    const [apSource, cfpSource] = await Promise.all([
+      fetchApPollRankingsMap(),
+      fetchCfpRankingsMap()
+    ]);
+    await runWithConcurrency(teams, 8, async team => {
+      try {
+        const previousRecord = team.record || "N/A";
+        const teamId = getEspnTeamId(team);
+        if (!teamId) {
+          failed++;
+          return;
+        }
+        const payload = await fetchTeamDetailsFromEspn(teamId);
+        const nextRecord = payload ? (pickRecordSummary(payload) || previousRecord || "N/A") : (previousRecord || "N/A");
+        const externalApById = teamId ? apSource.byId.get(String(teamId)) : null;
+        const externalApByName = lookupRankForTeam(apSource.byName, team.name);
+        const externalAp = externalApById || externalApByName;
+        const externalCfpById = teamId ? cfpSource.byId.get(String(teamId)) : null;
+        const externalCfpByName = lookupRankForTeam(cfpSource.byName, team.name);
+        const externalCfp = externalCfpById || externalCfpByName;
+        team.record = nextRecord;
+        team.conferenceRecord = pickConferenceRecord(payload) || team.conferenceRecord || "N/A";
+        team.kenpomRank = "N/A";
+        team.netRank = "N/A";
+        team.apRank = externalAp || team.apRank || "Unranked";
+        team.coachesRank = externalCfp || team.coachesRank || "Unranked";
+        if (previousRecord !== team.record) updated++;
+        else unchanged++;
+      } catch {
+        failed++;
+      }
+    });
+
+    return {
+      updated,
+      unchanged,
+      failed,
+      kenpomLoaded: false,
+      netLoaded: false,
+      apLoaded: apSource.loaded,
+      coachesLoaded: cfpSource.loaded
+    };
+  }
+
+  const [kenpomSource, netSource, apSource, coachesSource] = await Promise.all([
+    fetchKenPomRankingsMap(),
+    ensureNetRankingsLoaded(),
+    fetchApPollRankingsMap(),
+    fetchCoachesPollRankingsMap()
+  ]);
+
+  await runWithConcurrency(teams, 6, async team => {
+    try {
+      const previous = {
+        record: team.record || "N/A",
+        conferenceRecord: team.conferenceRecord || "N/A",
+        kenpomRank: team.kenpomRank || "N/A",
+        netRank: team.netRank || "N/A",
+        apRank: team.apRank || "Unranked",
+        coachesRank: team.coachesRank || "Unranked"
+      };
+
+      const teamId = getEspnTeamId(team);
+      let payload = null;
+      if (teamId) {
+        payload = await fetchTeamDetailsFromEspn(teamId);
+      }
+
+      const nextRecord = payload ? (pickRecordSummary(payload) || team.record || "N/A") : (team.record || "N/A");
+      const nextConferenceRecord = payload ? pickConferenceRecord(payload) : (team.conferenceRecord || "N/A");
+      const espnKenpom = payload ? pickKenPomRank(payload) : "N/A";
+      const espnNet = payload ? pickNetRank(payload) : "N/A";
+
+      const externalKenpom = lookupRankForTeam(kenpomSource.map, team.name);
+      const externalNet = lookupNetRankForTeam(netSource, team);
+      const externalApById = teamId ? apSource.byId.get(String(teamId)) : null;
+      const externalApByName = lookupRankForTeam(apSource.byName, team.name);
+      const externalAp = externalApById || externalApByName;
+      const externalCoachesById = teamId ? coachesSource.byId.get(String(teamId)) : null;
+      const externalCoachesByName = lookupRankForTeam(coachesSource.byName, team.name);
+      const externalCoaches = externalCoachesById || externalCoachesByName;
+      const nextKenpom = externalKenpom || espnKenpom || team.kenpomRank || "N/A";
+      const nextNet = externalNet || espnNet || team.netRank || "N/A";
+      const nextAp = externalAp || team.apRank || "Unranked";
+      const nextCoaches = externalCoaches || team.coachesRank || "Unranked";
+
+      team.record = nextRecord;
+      team.conferenceRecord = nextConferenceRecord || "N/A";
+      team.kenpomRank = nextKenpom || "N/A";
+      team.netRank = nextNet || "N/A";
+      team.apRank = nextAp || "Unranked";
+      team.coachesRank = nextCoaches || "Unranked";
+
+      const changed =
+        previous.record !== team.record ||
+        previous.conferenceRecord !== team.conferenceRecord ||
+        previous.kenpomRank !== team.kenpomRank ||
+        previous.netRank !== team.netRank ||
+        previous.apRank !== team.apRank ||
+        previous.coachesRank !== team.coachesRank;
+
+      if (changed) updated++;
+      else unchanged++;
+    } catch {
+      failed++;
+    }
+  });
+
+  return {
+    updated,
+    unchanged,
+    failed,
+    kenpomLoaded: kenpomSource.loaded,
+    netLoaded: netSource.loaded,
+    apLoaded: apSource.loaded,
+    coachesLoaded: coachesSource.loaded
+  };
+}
+
+async function updateConferenceRecordsFromEspn() {
+  let updated = 0;
+  let failed = 0;
+
+  await runWithConcurrency(teams, 8, async team => {
+    try {
+      const teamId = getEspnTeamId(team);
+      if (!teamId) return;
+      const payload = await fetchTeamDetailsFromEspn(teamId);
+      if (!payload) return;
+      const conferenceRecord = pickConferenceRecord(payload);
+      if (!conferenceRecord || conferenceRecord === "N/A") return;
+      if (team.conferenceRecord !== conferenceRecord) {
+        team.conferenceRecord = conferenceRecord;
+        updated++;
+      }
+    } catch {
+      failed++;
+    }
+  });
+
+  return { updated, failed };
+}
+
+function openDatePickerModal(defaultDate) {
+  datePickerInput.value = defaultDate;
+  datePickerModal.style.display = "flex";
+
+  return new Promise(resolve => {
+    const close = (result) => {
+      datePickerModal.style.display = "none";
+      datePickerConfirm.removeEventListener("click", onConfirm);
+      datePickerCancel.removeEventListener("click", onCancel);
+      datePickerModal.removeEventListener("click", onBackdropClick);
+      resolve(result);
+    };
+
+    const onConfirm = () => {
+      close(datePickerInput.value || defaultDate);
+    };
+
+    const onCancel = () => {
+      close(null);
+    };
+
+    const onBackdropClick = (e) => {
+      if (e.target === datePickerModal) close(null);
+    };
+
+    datePickerConfirm.addEventListener("click", onConfirm);
+    datePickerCancel.addEventListener("click", onCancel);
+    datePickerModal.addEventListener("click", onBackdropClick);
+    datePickerInput.focus();
+  });
+}
+
+function normalizeWeek(week) {
+  if (!week || !Array.isArray(week.rankingNames)) return null;
+  const savedAt = week.savedAt && !Number.isNaN(new Date(week.savedAt).getTime())
+    ? week.savedAt
+    : new Date().toISOString();
+  return {
+    id: week.id ? String(week.id) : `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    label: typeof week.label === "string" && week.label.trim() ? week.label.trim() : "Saved Week",
+    rankingDate: normalizeRankingDate(week.rankingDate || savedAt),
+    savedAt,
+    rankingNames: week.rankingNames.filter(name => typeof name === "string"),
+    honorableNames: Array.isArray(week.honorableNames)
+      ? week.honorableNames.filter(name => typeof name === "string").slice(0, 5)
+      : []
+  };
+}
+
+function sortWeeks() {
+  weeks.sort((a, b) => {
+    const byDate = a.rankingDate.localeCompare(b.rankingDate);
+    if (byDate !== 0) return byDate;
+    return a.savedAt.localeCompare(b.savedAt);
+  });
+}
+
+function getWeekDisplayLabel(week, index) {
+  return `Week ${index + 1} (${formatRankingDate(week.rankingDate)})`;
+}
+
+function renderWeekSelectors() {
+  weekFromSelect.innerHTML = "";
+  weekToSelect.innerHTML = "";
+
+  weeks.forEach((week, i) => {
+    const label = getWeekDisplayLabel(week, i);
+    const optionFrom = document.createElement("option");
+    optionFrom.value = week.id;
+    optionFrom.textContent = label;
+    weekFromSelect.appendChild(optionFrom);
+
+    const optionTo = document.createElement("option");
+    optionTo.value = week.id;
+    optionTo.textContent = label;
+    weekToSelect.appendChild(optionTo);
+
+    if (i === weeks.length - 2) weekFromSelect.value = week.id;
+    if (i === weeks.length - 1) weekToSelect.value = week.id;
+  });
+
+  if (weeks.length < 2) {
+    compareOutput.innerHTML = "<em>Save at least 2 weeks to compare rankings.</em>";
+  }
+}
+
+function compareSelectedWeeks() {
+  if (weeks.length < 2) {
+    compareOutput.innerHTML = "<em>Save at least 2 weeks to compare rankings.</em>";
+    return;
+  }
+
+  const fromId = weekFromSelect.value;
+  const toId = weekToSelect.value;
+  const from = weeks.find(w => w.id === fromId);
+  const to = weeks.find(w => w.id === toId);
+
+  if (!from || !to) {
+    compareOutput.innerHTML = "<em>Select both weeks to compare.</em>";
+    return;
+  }
+
+  if (from.id === to.id) {
+    compareOutput.innerHTML = "<em>Select two different weeks.</em>";
+    return;
+  }
+
+  const fromIndex = {};
+  from.rankingNames.forEach((name, i) => {
+    fromIndex[name] = i + 1;
+  });
+
+  const up = [];
+  const down = [];
+  const same = [];
+  const newTeams = [];
+
+  to.rankingNames.forEach((name, i) => {
+    const newPos = i + 1;
+    const oldPos = fromIndex[name];
+
+    if (!oldPos) {
+      newTeams.push(`${name} (new at #${newPos})`);
+      return;
+    }
+
+    const move = oldPos - newPos;
+    if (move > 0) up.push(`${name}: #${oldPos} -> #${newPos} (+${move})`);
+    if (move < 0) down.push(`${name}: #${oldPos} -> #${newPos} (${move})`);
+    if (move === 0) same.push(`${name}: stayed at #${newPos}`);
+  });
+
+  const toSet = new Set(to.rankingNames);
+  const dropped = from.rankingNames.filter(name => !toSet.has(name)).map(name => `${name} (dropped out)`);
+
+  const sections = [];
+  const fromIndexLabel = weeks.findIndex(w => w.id === from.id);
+  const toIndexLabel = weeks.findIndex(w => w.id === to.id);
+  const fromLabel = fromIndexLabel === -1 ? from.label : getWeekDisplayLabel(from, fromIndexLabel);
+  const toLabel = toIndexLabel === -1 ? to.label : getWeekDisplayLabel(to, toIndexLabel);
+  sections.push(`<strong>Comparing:</strong> ${fromLabel} -> ${toLabel}`);
+  sections.push(`<br><br><strong>Moved Up</strong><br>${up.length ? up.join("<br>") : "None"}`);
+  sections.push(`<br><br><strong>Moved Down</strong><br>${down.length ? down.join("<br>") : "None"}`);
+  sections.push(`<br><br><strong>No Change</strong><br>${same.length ? same.join("<br>") : "None"}`);
+  sections.push(`<br><br><strong>New This Week</strong><br>${newTeams.length ? newTeams.join("<br>") : "None"}`);
+  sections.push(`<br><br><strong>Dropped Out</strong><br>${dropped.length ? dropped.join("<br>") : "None"}`);
+
+  compareOutput.innerHTML = sections.join("");
+}
+
+function renderSavedListsMenu() {
+  savedListsMenu.innerHTML = "";
+
+  if (!weeks.length) {
+    const empty = document.createElement("div");
+    empty.className = "savedListEmpty";
+    empty.textContent = "No saved lists yet.";
+    savedListsMenu.appendChild(empty);
+    return;
+  }
+
+  weeks.forEach((week, i) => {
+    const row = document.createElement("div");
+    row.className = "savedListRow";
+
+    const viewBtn = document.createElement("button");
+    viewBtn.className = "savedListView";
+    viewBtn.textContent = `${getWeekDisplayLabel(week, i)} - ${week.label}`;
+    viewBtn.title = "View this saved ranking";
+    viewBtn.addEventListener("click", () => {
+      loadRankingFromWeek(week);
+      savedListsMenu.style.display = "none";
+    });
+
+    const deleteBtn = document.createElement("button");
+    deleteBtn.className = "deleteListBtn";
+    deleteBtn.title = "Delete this saved list";
+    deleteBtn.setAttribute("aria-label", "Delete saved list");
+    deleteBtn.textContent = "🗑";
+    deleteBtn.addEventListener("click", () => {
+      weeks = weeks.filter(w => w.id !== week.id);
+      persistWeeks();
+      renderWeekSelectors();
+      renderSavedListsMenu();
+      compareSelectedWeeks();
+      updateTrendChart();
+    });
+
+    row.appendChild(viewBtn);
+    row.appendChild(deleteBtn);
+    savedListsMenu.appendChild(row);
+  });
+}
+
+function loadRankingFromWeek(week) {
+  ranking = week.rankingNames
+    .map(getTeamByName)
+    .filter(Boolean)
+    .slice(0, 25);
+  honorableMentions = (Array.isArray(week.honorableNames) ? week.honorableNames : [])
+    .map(getTeamByName)
+    .filter(Boolean)
+    .slice(0, 5);
+  persistCurrentRanking();
+  persistHonorableMentions();
+  renderRanking();
+  renderTeams();
+  updateChart();
+}
+
+function getLogoImage(teamName) {
+  const team = getTeamByName(teamName);
+  if (!team || !team.logo) return "circle";
+  if (!logoCache[teamName]) {
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => {
+      delete teamColorCache[teamName];
+      scheduleTrendRender();
+    };
+    img.src = team.logo;
+    logoCache[teamName] = img;
+  }
+  return logoCache[teamName];
+}
+
+function fallbackLineColor(teamName) {
+  let hash = 0;
+  for (let i = 0; i < teamName.length; i++) {
+    hash = ((hash << 5) - hash) + teamName.charCodeAt(i);
+    hash |= 0;
+  }
+  const hue = Math.abs(hash) % 360;
+  return `hsla(${hue}, 70%, 65%, 0.45)`;
+}
+
+function getTeamLineColor(teamName) {
+  if (teamColorCache[teamName]) return teamColorCache[teamName];
+
+  const fallback = fallbackLineColor(teamName);
+  const pointStyle = getLogoImage(teamName);
+  if (!(pointStyle instanceof HTMLImageElement) || !pointStyle.complete || !pointStyle.naturalWidth) {
+    teamColorCache[teamName] = fallback;
+    return fallback;
+  }
+
+  try {
+    const sampleCanvas = document.createElement("canvas");
+    sampleCanvas.width = 24;
+    sampleCanvas.height = 24;
+    const sampleCtx = sampleCanvas.getContext("2d");
+    sampleCtx.drawImage(pointStyle, 0, 0, 24, 24);
+    const pixels = sampleCtx.getImageData(0, 0, 24, 24).data;
+    let r = 0;
+    let g = 0;
+    let b = 0;
+    let count = 0;
+
+    for (let i = 0; i < pixels.length; i += 4) {
+      const alpha = pixels[i + 3];
+      if (alpha < 80) continue;
+      const red = pixels[i];
+      const green = pixels[i + 1];
+      const blue = pixels[i + 2];
+      if (red > 245 && green > 245 && blue > 245) continue;
+      r += red;
+      g += green;
+      b += blue;
+      count++;
+    }
+
+    if (!count) {
+      teamColorCache[teamName] = fallback;
+      return fallback;
+    }
+
+    r = Math.round(r / count);
+    g = Math.round(g / count);
+    b = Math.round(b / count);
+
+    const lightR = Math.round((r + 255) / 2);
+    const lightG = Math.round((g + 255) / 2);
+    const lightB = Math.round((b + 255) / 2);
+    const color = `rgba(${lightR}, ${lightG}, ${lightB}, 0.55)`;
+    teamColorCache[teamName] = color;
+    return color;
+  } catch {
+    teamColorCache[teamName] = fallback;
+    return fallback;
+  }
+}
+
+function updateTrendChart() {
+  scheduleTrendRender();
+}
+
+function scheduleTrendRender() {
+  if (trendRenderScheduled) return;
+  trendRenderScheduled = true;
+  requestAnimationFrame(() => {
+    trendRenderScheduled = false;
+    drawTrendChart();
+  });
+}
+
+function drawTrendChart() {
+  const canvas = document.getElementById("trendChart");
+  const ctx = canvas.getContext("2d");
+  const dpr = window.devicePixelRatio || 1;
+  const cssWidth = Math.max(canvas.clientWidth || 900, 900);
+
+  if (!weeks.length) {
+    const emptyHeight = 220;
+    canvas.style.height = `${emptyHeight}px`;
+    canvas.width = Math.floor(cssWidth * dpr);
+    canvas.height = Math.floor(emptyHeight * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, cssWidth, emptyHeight);
+    ctx.fillStyle = "#e7e7e7";
+    ctx.fillRect(0, 0, cssWidth, emptyHeight);
+    ctx.fillStyle = "#111";
+    ctx.font = "600 20px Arial";
+    ctx.textAlign = "center";
+    ctx.fillText("Save weeks to see rank movement.", cssWidth / 2, emptyHeight / 2);
+    return;
+  }
+
+  const teamNames = new Set();
+  weeks.forEach(week => {
+    week.rankingNames.forEach(name => teamNames.add(name));
+  });
+  const maxRank = Math.max(...weeks.map(w => w.rankingNames.length), 1);
+  const displayRankCount = Math.max(25, maxRank);
+  const headerH = 52;
+  const topPad = 84;
+  const bottomPad = 30;
+  const leftPad = 120;
+  const rightPad = 120;
+  const rowSpacing = 30;
+  const chartHeight = Math.max(760, topPad + bottomPad + (displayRankCount - 1) * rowSpacing + 30);
+
+  canvas.style.height = `${chartHeight}px`;
+  canvas.width = Math.floor(cssWidth * dpr);
+  canvas.height = Math.floor(chartHeight * dpr);
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, cssWidth, chartHeight);
+
+  const plotTop = topPad;
+  const plotBottom = chartHeight - bottomPad;
+  const plotLeft = leftPad;
+  const plotRight = cssWidth - rightPad;
+  const plotHeight = Math.max(plotBottom - plotTop, 1);
+  const plotWidth = Math.max(plotRight - plotLeft, 1);
+  const weekCount = weeks.length;
+  const xStep = weekCount > 1 ? plotWidth / (weekCount - 1) : 0;
+  const yStep = displayRankCount > 1 ? plotHeight / (displayRankCount - 1) : 0;
+
+  const xForWeek = i => plotLeft + (xStep * i);
+  const yForRank = rank => plotTop + ((rank - 1) * yStep);
+  const palette = getTrendPalette();
+
+  ctx.fillStyle = palette.background;
+  ctx.fillRect(0, 0, cssWidth, chartHeight);
+
+  ctx.fillStyle = palette.headerBg;
+  ctx.fillRect(0, 0, cssWidth, headerH);
+  ctx.fillStyle = palette.headerText;
+  ctx.font = "italic 700 16px Arial";
+  ctx.textAlign = "left";
+  ctx.fillText("Weekly Tracker", 10, 33);
+
+  ctx.fillStyle = palette.primaryText;
+  ctx.font = "600 18px Arial";
+  ctx.textAlign = "center";
+  ctx.font = "600 14px Arial";
+  weeks.forEach((week, i) => {
+    const weekLabel = getWeekDisplayLabel(week, i);
+    ctx.fillStyle = palette.secondaryText;
+    ctx.fillText(weekLabel, xForWeek(i), 70);
+  });
+
+  ctx.strokeStyle = palette.grid;
+  ctx.lineWidth = 1;
+  for (let r = 1; r <= displayRankCount; r++) {
+    const y = yForRank(r);
+    ctx.beginPath();
+    ctx.moveTo(plotLeft, y);
+    ctx.lineTo(plotRight, y);
+    ctx.stroke();
+  }
+
+  const axisX = plotLeft - 18;
+  ctx.strokeStyle = palette.axis;
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.moveTo(axisX, plotTop);
+  ctx.lineTo(axisX, plotBottom);
+  ctx.stroke();
+
+  ctx.fillStyle = palette.axis;
+  ctx.font = "600 12px Arial";
+  ctx.textAlign = "right";
+  for (let r = 1; r <= displayRankCount; r++) {
+    const y = yForRank(r);
+    ctx.fillText(String(r), axisX - 6, y + 4);
+  }
+
+  [...teamNames].forEach(teamName => {
+    const lineColor = getTeamLineColor(teamName);
+    const points = [];
+    weeks.forEach((week, i) => {
+      const pos = week.rankingNames.indexOf(teamName);
+      if (pos !== -1) {
+        points.push({ x: xForWeek(i), y: yForRank(pos + 1), rank: pos + 1 });
+      }
+    });
+    if (!points.length) return;
+
+    if (points.length > 1) {
+      ctx.strokeStyle = lineColor;
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      ctx.moveTo(points[0].x, points[0].y);
+      for (let i = 1; i < points.length; i++) {
+        ctx.lineTo(points[i].x, points[i].y);
+      }
+      ctx.stroke();
+    }
+
+    const logo = getLogoImage(teamName);
+    const logoSize = 20;
+    points.forEach(p => {
+      if (logo instanceof HTMLImageElement && logo.complete && logo.naturalWidth) {
+        ctx.drawImage(logo, p.x - logoSize / 2, p.y - logoSize / 2, logoSize, logoSize);
+      } else {
+        ctx.fillStyle = lineColor;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, 4, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    });
+  });
+}
+
+function getTrendPalette() {
+  if (document.body.classList.contains("dark")) {
+    return {
+      background: "#202632",
+      headerBg: "#0b1220",
+      headerText: "#f3f4f6",
+      primaryText: "#e5e7eb",
+      secondaryText: "#d1d5db",
+      grid: "rgba(229, 231, 235, 0.16)",
+      axis: "#f3f4f6"
+    };
+  }
+
+  return {
+    background: "#f3f5f8",
+    headerBg: "#111827",
+    headerText: "#f9fafb",
+    primaryText: "#111827",
+    secondaryText: "#1f2937",
+    grid: "rgba(31, 41, 55, 0.16)",
+    axis: "#111827"
+  };
+}
+
+function populateConfFilter() {
+  const currentValue = confFilter.value;
+  confFilter.innerHTML = '<option value="">All Conferences</option>';
+
+  const confs = [...new Set(teams.map(t => t.conference))].sort((a, b) => a.localeCompare(b));
+  confs.forEach(c => {
+    const opt = document.createElement("option");
+    opt.value = c;
+    opt.textContent = c;
+    confFilter.appendChild(opt);
+  });
+
+  if (confs.includes(currentValue)) {
+    confFilter.value = currentValue;
+  }
+}
+
+function conferenceGroupType(conference) {
+  const majorConferences = isBasketballSport()
+    ? new Set(["Big 12", "Big Ten", "SEC", "ACC", "Big East"])
+    : new Set(["SEC", "Big Ten", "Big 12", "ACC", "Pac-12"]);
+  return majorConferences.has(conference) ? "major" : "midmajor";
+}
+
+function renderTeams() {
+  availableTeamsList.querySelectorAll(".team").forEach(t => t.remove());
+  const filter = searchInput.value.toLowerCase();
+  const conf = confFilter.value;
+  const tier = tierFilter.value;
+  const apMode = tier === "apOnly";
+  const coachesMode = tier === "coachesOnly";
+  const pollOnlyMode = apMode || coachesMode;
+  const sortMode = sortFilter.value;
+  const rankingNames = new Set([...ranking, ...honorableMentions].map(t => t.name));
+  const seenNames = new Set();
+  const filteredTeams = [];
+
+  teams.forEach(team => {
+    const nameKey = String(team.name || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+    if (seenNames.has(nameKey)) return;
+    seenNames.add(nameKey);
+    if (rankingNames.has(team.name)) return;
+    if (filter && !team.name.toLowerCase().includes(filter)) return;
+    if (conf && team.conference !== conf) return;
+    if (tier && !pollOnlyMode && conferenceGroupType(team.conference || "Other") !== tier) return;
+    if (apMode && apRankNumber(team.apRank) === null && pollVotesNumber(team.apRank) === null) return;
+    if (coachesMode && coachesRankNumber(team.coachesRank) === null && pollVotesNumber(team.coachesRank) === null) return;
+    filteredTeams.push(team);
+  });
+
+  if (pollOnlyMode) {
+    filteredTeams.sort((a, b) => {
+      const aRank = apMode ? (apRankNumber(a.apRank) ?? 999) : (coachesRankNumber(a.coachesRank) ?? 999);
+      const bRank = apMode ? (apRankNumber(b.apRank) ?? 999) : (coachesRankNumber(b.coachesRank) ?? 999);
+      if (aRank !== bRank) return aRank - bRank;
+      const aVotes = apMode ? (pollVotesNumber(a.apRank) ?? -1) : (pollVotesNumber(a.coachesRank) ?? -1);
+      const bVotes = apMode ? (pollVotesNumber(b.apRank) ?? -1) : (pollVotesNumber(b.coachesRank) ?? -1);
+      if (aVotes !== bVotes) return bVotes - aVotes;
+      return a.name.localeCompare(b.name);
+    });
+  } else {
+    filteredTeams.sort((a, b) => compareTeams(a, b, sortMode));
+  }
+
+  filteredTeams.forEach(team => {
+    const div = document.createElement("div");
+    div.className = "team";
+    div.draggable = true;
+    const conferenceLabel = team.conference || "Other";
+    const pollLabel = apMode
+      ? `${team.apRank || "Unranked"} `
+      : (coachesMode ? `${team.coachesRank || "Unranked"} ` : "");
+    div.innerHTML = `<img src="${team.logo}" alt="${team.name} logo"><div>${pollLabel}${team.name}<br>${team.record} | ${conferenceLabel}</div>`;
+    div.addEventListener("dragstart", e => {
+      e.dataTransfer.setData("text", team.name);
+      e.dataTransfer.setData("fromRanking", "false");
+      e.dataTransfer.setData("fromHonorable", "false");
+    });
+    div.addEventListener("dragend", markTeamDragged);
+    div.addEventListener("click", () => {
+      if (shouldSuppressTeamClick()) return;
+      openTeamDetails(team);
+    });
+
+    availableTeamsList.appendChild(div);
+  });
+}
+
+function parseRecord(recordText) {
+  const match = String(recordText || "").match(/(\d+)\s*-\s*(\d+)/);
+  if (!match) return null;
+  const wins = Number(match[1]);
+  const losses = Number(match[2]);
+  if (!Number.isFinite(wins) || !Number.isFinite(losses)) return null;
+  const games = wins + losses;
+  return {
+    wins,
+    losses,
+    winPct: games > 0 ? wins / games : 0,
+    games
+  };
+}
+
+function helperPowerConferenceSet() {
+  return isBasketballSport()
+    ? new Set(["Big 12", "Big Ten", "SEC", "ACC", "Big East"])
+    : new Set(["SEC", "Big Ten", "Big 12", "ACC", "Pac-12"]);
+}
+
+function helperSeedScore(team) {
+  const parsed = parseRecord(team.record);
+  const ap = apRankNumber(team.apRank);
+  const secondPoll = coachesRankNumber(team.coachesRank);
+  const powerBonus = helperPowerConferenceSet().has(team.conference || "") ? 4 : 0;
+  const recordScore = parsed ? (parsed.winPct * 100) + Math.min(parsed.wins, 35) * 0.35 : 0;
+  const apScore = ap ? (30 - Math.min(ap, 30)) * 1.7 : 0;
+  const secondPollScore = secondPoll ? (30 - Math.min(secondPoll, 30)) * 1.4 : 0;
+  return recordScore + apScore + secondPollScore + powerBonus;
+}
+
+function buildRankHelperPool() {
+  const powerConfs = helperPowerConferenceSet();
+  const seen = new Set();
+  const candidates = teams
+    .filter(team => {
+      const key = normalizeTeamLookupName(team.name);
+      if (!key || seen.has(key)) return false;
+      seen.add(key);
+      const isPower = powerConfs.has(team.conference || "");
+      const apRank = apRankNumber(team.apRank);
+      const isTop25Ap = apRank !== null && apRank <= 25;
+      if (!isPower && !isTop25Ap) return false;
+      return true;
+    })
+    .map(team => ({
+      team,
+      seed: helperSeedScore(team)
+    }))
+    .sort((a, b) => b.seed - a.seed);
+
+  const minPool = Math.min(Math.max(20, ranking.length || 25), candidates.length);
+  const target = Math.min(50, Math.max(minPool, 32));
+  return candidates.slice(0, target).map(x => x.team);
+}
+
+function helperPairKey(aName, bName) {
+  return [aName, bName].sort((a, b) => a.localeCompare(b)).join("::");
+}
+
+function helperMultiKey(teamNames) {
+  return [...teamNames].sort((a, b) => a.localeCompare(b)).join("::");
+}
+
+function helperPickPair() {
+  const state = rankHelperState;
+  if (!state || state.pool.length < 2) return null;
+  const rated = [...state.pool].sort((a, b) => (state.ratings.get(b.name) || 1500) - (state.ratings.get(a.name) || 1500));
+  const cutoff = Math.min(25, rated.length) - 1;
+  const minAppearances = state.minAppearancesPerTeam || 2;
+  const underexposed = rated.filter(team => (state.matchCounts.get(team.name) || 0) < minAppearances);
+
+  // Coverage phase: force broad exposure first so every team is seen enough.
+  if (underexposed.length >= 2) {
+    let bestCoveragePair = null;
+    let bestCoverageScore = -Infinity;
+    for (let i = 0; i < underexposed.length; i++) {
+      for (let j = i + 1; j < underexposed.length; j++) {
+        const a = underexposed[i];
+        const b = underexposed[j];
+        const key = helperPairKey(a.name, b.name);
+        if (state.askedPairs.has(key)) continue;
+
+        const ra = state.ratings.get(a.name) || 1500;
+        const rb = state.ratings.get(b.name) || 1500;
+        const gap = Math.abs(ra - rb);
+        const closeness = Math.max(0, 1 - (gap / 260));
+        const recencyPenalty =
+          (state.recentTeams.includes(a.name) ? 0.8 : 0) +
+          (state.recentTeams.includes(b.name) ? 0.8 : 0);
+        const score = closeness - recencyPenalty;
+        if (score > bestCoverageScore) {
+          bestCoverageScore = score;
+          bestCoveragePair = [a, b];
+        }
+      }
+    }
+    if (bestCoveragePair) return bestCoveragePair;
+  }
+
+  let bestPair = null;
+  let bestScore = -Infinity;
+
+  for (let i = 0; i < rated.length; i++) {
+    const a = rated[i];
+    const aRating = state.ratings.get(a.name) || 1500;
+    const aMatches = state.matchCounts.get(a.name) || 0;
+    const aUncertainty = 1 / (1 + aMatches);
+    const aBoundary = Math.max(0, 10 - Math.abs(i - cutoff));
+
+    // Local neighborhood for efficient adaptive selection.
+    const start = Math.max(0, i - 10);
+    const end = Math.min(rated.length - 1, i + 10);
+    for (let j = start; j <= end; j++) {
+      if (i === j) continue;
+      const b = rated[j];
+      const key = helperPairKey(a.name, b.name);
+      if (state.askedPairs.has(key)) continue;
+
+      const bRating = state.ratings.get(b.name) || 1500;
+      const bMatches = state.matchCounts.get(b.name) || 0;
+      const bUncertainty = 1 / (1 + bMatches);
+      const bBoundary = Math.max(0, 10 - Math.abs(j - cutoff));
+      const ratingGap = Math.abs(aRating - bRating);
+      const recencyPenalty =
+        (state.recentTeams.includes(a.name) ? 0.9 : 0) +
+        (state.recentTeams.includes(b.name) ? 0.9 : 0);
+      const exposurePenalty = ((aMatches + bMatches) / Math.max(1, state.questionIndex + 2)) * 0.9;
+
+      // Adaptive "information gain" score:
+      // - prefer close ratings (hard decisions)
+      // - prefer uncertain teams (few matchups)
+      // - prefer teams near ranking cutoff
+      const closeness = Math.max(0, 1 - (ratingGap / 260));
+      const uncertainty = aUncertainty + bUncertainty;
+      const boundaryFocus = (aBoundary + bBoundary) / 10;
+      const adaptiveScore =
+        (closeness * 1.7) +
+        (uncertainty * 1.35) +
+        (boundaryFocus * 1.05) -
+        exposurePenalty -
+        recencyPenalty;
+
+      if (adaptiveScore > bestScore) {
+        bestScore = adaptiveScore;
+        bestPair = [a, b];
+      }
+    }
+  }
+
+  if (bestPair) return bestPair;
+
+  for (let i = 0; i < rated.length; i++) {
+    for (let j = i + 1; j < rated.length; j++) {
+      const a = rated[i];
+      const b = rated[j];
+      const key = helperPairKey(a.name, b.name);
+      if (!state.askedPairs.has(key)) return [a, b];
+    }
+  }
+  return null;
+}
+
+function helperPickMultiGroup(size = 4) {
+  const state = rankHelperState;
+  if (!state || state.pool.length < size) return null;
+  const rated = [...state.pool].sort((a, b) => (state.ratings.get(b.name) || 1500) - (state.ratings.get(a.name) || 1500));
+  const cutoff = Math.min(25, rated.length) - 1;
+  const minAppearances = state.minAppearancesPerTeam || 2;
+
+  const candidates = rated
+    .map((team, idx) => {
+      const matches = state.matchCounts.get(team.name) || 0;
+      const uncertainty = 1 / (1 + matches);
+      const boundary = Math.max(0, 10 - Math.abs(idx - cutoff));
+      const recencyPenalty = state.recentTeams.includes(team.name) ? 0.65 : 0;
+      const underexposedBonus = matches < minAppearances ? 1.0 : 0;
+      const score = (uncertainty * 1.3) + (boundary * 0.12) + underexposedBonus - recencyPenalty;
+      return { team, score };
+    })
+    .sort((a, b) => b.score - a.score)
+    .slice(0, Math.min(18, rated.length))
+    .map(x => x.team);
+
+  if (candidates.length < size) return null;
+
+  let best = null;
+  let bestScore = -Infinity;
+  const scoreGroup = (group) => {
+    const key = helperMultiKey(group.map(t => t.name));
+    if (state.askedMultiGroups.has(key)) return;
+
+    const ratings = group.map(t => state.ratings.get(t.name) || 1500).sort((a, b) => b - a);
+    const spread = ratings[0] - ratings[ratings.length - 1];
+    const closeness = Math.max(0, 1 - (spread / 320));
+    const uncertainty = group.reduce((sum, t) => sum + (1 / (1 + (state.matchCounts.get(t.name) || 0))), 0) / group.length;
+    const recencyPenalty = group.reduce((sum, t) => sum + (state.recentTeams.includes(t.name) ? 0.3 : 0), 0);
+    const score = (closeness * 1.25) + (uncertainty * 1.45) - recencyPenalty;
+
+    if (score > bestScore) {
+      bestScore = score;
+      best = group;
+    }
+  };
+
+  if (size === 3) {
+    for (let i = 0; i < candidates.length; i++) {
+      for (let j = i + 1; j < candidates.length; j++) {
+        for (let k = j + 1; k < candidates.length; k++) {
+          scoreGroup([candidates[i], candidates[j], candidates[k]]);
+        }
+      }
+    }
+  } else {
+    for (let i = 0; i < candidates.length; i++) {
+      for (let j = i + 1; j < candidates.length; j++) {
+        for (let k = j + 1; k < candidates.length; k++) {
+          for (let m = k + 1; m < candidates.length; m++) {
+            scoreGroup([candidates[i], candidates[j], candidates[k], candidates[m]]);
+          }
+        }
+      }
+    }
+  }
+
+  return best;
+}
+
+function helperShouldUseMultiQuestion() {
+  const state = rankHelperState;
+  if (!state || state.pool.length < 4) return false;
+  if (state.questionIndex < state.baselineRounds) return false;
+  const postBaselineIndex = (state.questionIndex - state.baselineRounds) + 1;
+  return postBaselineIndex % state.multiQuestionEvery === 0;
+}
+
+function helperPickBaselineGroup(size = 5) {
+  const state = rankHelperState;
+  if (!state || state.pool.length < size) return null;
+  const rated = [...state.pool].sort((a, b) => (state.ratings.get(b.name) || 1500) - (state.ratings.get(a.name) || 1500));
+  const shortlist = rated.slice(0, Math.min(22, rated.length));
+  let best = null;
+  let bestScore = -Infinity;
+
+  for (let i = 0; i < shortlist.length; i++) {
+    for (let j = i + 1; j < shortlist.length; j++) {
+      for (let k = j + 1; k < shortlist.length; k++) {
+        for (let m = k + 1; m < shortlist.length; m++) {
+          for (let n = m + 1; n < shortlist.length; n++) {
+            const group = [shortlist[i], shortlist[j], shortlist[k], shortlist[m], shortlist[n]];
+            const key = helperMultiKey(group.map(t => t.name));
+            if (state.askedBaselineGroups.has(key)) continue;
+
+            const ratings = group.map(t => state.ratings.get(t.name) || 1500).sort((a, b) => b - a);
+            const spread = ratings[0] - ratings[ratings.length - 1];
+            const closeness = Math.max(0, 1 - (spread / 340));
+            const uncertainty = group.reduce((sum, t) => sum + (1 / (1 + (state.matchCounts.get(t.name) || 0))), 0) / group.length;
+            const recencyPenalty = group.reduce((sum, t) => sum + (state.recentTeams.includes(t.name) ? 0.35 : 0), 0);
+            const score = (closeness * 1.3) + (uncertainty * 1.6) - recencyPenalty;
+
+            if (score > bestScore) {
+              bestScore = score;
+              best = group;
+            }
+          }
+        }
+      }
+    }
+  }
+
+  return best;
+}
+
+function helperTeamLabel(team) {
+  const pollB = isBasketballSport() ? "Coaches" : "CFP";
+  return `${team.record || "N/A"} | ${team.conference || "Other"} | AP ${team.apRank || "Unranked"} | ${pollB} ${team.coachesRank || "Unranked"}`;
+}
+
+function helperTeamLogo(team) {
+  return team?.logo || "";
+}
+
+function helperRenderQuestion() {
+  const state = rankHelperState;
+  if (!state) return;
+  if (state.questionIndex >= state.totalQuestions) {
+    helperRenderResults();
+    return;
+  }
+
+  if (state.questionIndex < state.baselineRounds) {
+    const group = helperPickBaselineGroup(5);
+    if (!group) {
+      state.questionIndex = state.baselineRounds;
+      helperRenderQuestion();
+      return;
+    }
+    state.currentPair = null;
+    state.currentGroup = null;
+    state.currentBaselineGroup = group;
+    state.currentBaselineSelection = [];
+
+    const choices = group.map((team, idx) => `
+      <button class="helperChoice" data-team-index="${idx}">
+        <div class="helperChoiceRow">
+          <img class="helperTeamLogo" src="${helperTeamLogo(team)}" alt="${team.name} logo">
+          <div>
+            <strong>${team.name}</strong>
+            <div class="helperChoiceMeta">${helperTeamLabel(team)}</div>
+          </div>
+        </div>
+      </button>
+    `).join("");
+
+    rankHelperBody.innerHTML = `
+      <div class="helperMeta">Question ${state.questionIndex + 1} of ${state.totalQuestions} (baseline ${state.questionIndex + 1}/${state.baselineRounds})</div>
+      <div class="helperPrompt">Rank these 5 teams from best to worst (1 to 5).</div>
+      <div id="helperBaselineOrder" class="helperResultList" style="margin-bottom:10px;">
+        <div style="opacity:.8;">Selected order: <strong id="helperBaselineCount">0/5</strong></div>
+      </div>
+      <div class="helperChoices">${choices}</div>
+      <div class="modalActions" style="margin-top:10px;">
+        <button id="helperBaselineUndo">Undo</button>
+        <button id="helperBaselineReset">Reset</button>
+        <button id="helperBaselineSubmit" disabled>Submit Ranking</button>
+      </div>
+    `;
+
+    const renderBaselineSelection = () => {
+      const orderDiv = document.getElementById("helperBaselineOrder");
+      const countEl = document.getElementById("helperBaselineCount");
+      if (countEl) countEl.textContent = `${state.currentBaselineSelection.length}/5`;
+      const rows = state.currentBaselineSelection.map((team, i) => `
+        <div style="display:flex; align-items:center; gap:8px; padding:4px 0;">
+          <strong>#${i + 1}</strong>
+          <img src="${helperTeamLogo(team)}" alt="${team.name} logo" style="width:30px; height:30px; object-fit:contain;">
+          <span>${team.name}</span>
+        </div>
+      `).join("");
+      if (orderDiv) {
+        orderDiv.innerHTML = `<div style="opacity:.8;">Selected order: <strong id="helperBaselineCount">${state.currentBaselineSelection.length}/5</strong></div>${rows}`;
+      }
+      const submitBtn = document.getElementById("helperBaselineSubmit");
+      if (submitBtn) submitBtn.disabled = state.currentBaselineSelection.length !== group.length;
+    };
+
+    rankHelperBody.querySelectorAll(".helperChoice").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const idx = Number(btn.getAttribute("data-team-index"));
+        const team = group[idx];
+        if (!team) return;
+        if (state.currentBaselineSelection.find(t => t.name === team.name)) return;
+        state.currentBaselineSelection.push(team);
+        btn.disabled = true;
+        renderBaselineSelection();
+      });
+    });
+
+    document.getElementById("helperBaselineUndo")?.addEventListener("click", () => {
+      const popped = state.currentBaselineSelection.pop();
+      if (!popped) return;
+      const idx = group.findIndex(t => t.name === popped.name);
+      const btn = rankHelperBody.querySelector(`.helperChoice[data-team-index="${idx}"]`);
+      if (btn) btn.disabled = false;
+      renderBaselineSelection();
+    });
+
+    document.getElementById("helperBaselineReset")?.addEventListener("click", () => {
+      state.currentBaselineSelection = [];
+      rankHelperBody.querySelectorAll(".helperChoice").forEach(btn => { btn.disabled = false; });
+      renderBaselineSelection();
+    });
+
+    document.getElementById("helperBaselineSubmit")?.addEventListener("click", () => {
+      if (state.currentBaselineSelection.length !== group.length) return;
+      helperApplyBaselineRanking(group, state.currentBaselineSelection);
+    });
+
+    return;
+  }
+
+  const useMulti = helperShouldUseMultiQuestion();
+  if (useMulti) {
+    const group = helperPickMultiGroup(4);
+    if (group) {
+      state.currentPair = null;
+      state.currentGroup = group;
+      const cards = group.map((team, idx) => `
+        <button class="helperChoice" data-choice="${idx}">
+          <div class="helperChoiceRow">
+            <img class="helperTeamLogo" src="${helperTeamLogo(team)}" alt="${team.name} logo">
+            <div>
+              <strong>${team.name}</strong>
+              <div class="helperChoiceMeta">${helperTeamLabel(team)}</div>
+            </div>
+          </div>
+        </button>
+      `).join("");
+
+      rankHelperBody.innerHTML = `
+        <div class="helperMeta">Question ${state.questionIndex + 1} of ${state.totalQuestions} (4-team round)</div>
+        <div class="helperPrompt">Which team is best in this group?</div>
+        <div class="helperChoices">${cards}</div>
+      `;
+
+      rankHelperBody.querySelectorAll(".helperChoice").forEach(btn => {
+        btn.addEventListener("click", () => {
+          const idx = Number(btn.getAttribute("data-choice"));
+          const winner = group[idx];
+          if (!winner) return;
+          helperApplyMultiAnswer(winner, group);
+        });
+      });
+      return;
+    }
+  }
+
+  const pair = helperPickPair();
+  if (!pair) {
+    helperRenderResults();
+    return;
+  }
+  state.currentGroup = null;
+  state.currentPair = pair;
+  const [a, b] = pair;
+  rankHelperBody.innerHTML = `
+    <div class="helperMeta">Question ${state.questionIndex + 1} of ${state.totalQuestions}</div>
+    <div class="helperPrompt">Which team is better right now?</div>
+    <div class="helperChoices">
+      <button class="helperChoice" data-choice="a">
+        <div class="helperChoiceRow">
+          <img class="helperTeamLogo" src="${helperTeamLogo(a)}" alt="${a.name} logo">
+          <div>
+            <strong>${a.name}</strong>
+            <div class="helperChoiceMeta">${helperTeamLabel(a)}</div>
+          </div>
+        </div>
+      </button>
+      <button class="helperChoice" data-choice="b">
+        <div class="helperChoiceRow">
+          <img class="helperTeamLogo" src="${helperTeamLogo(b)}" alt="${b.name} logo">
+          <div>
+            <strong>${b.name}</strong>
+            <div class="helperChoiceMeta">${helperTeamLabel(b)}</div>
+          </div>
+        </div>
+      </button>
+    </div>
+  `;
+
+  rankHelperBody.querySelectorAll(".helperChoice").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const chooseA = btn.getAttribute("data-choice") === "a";
+      const winner = chooseA ? a : b;
+      const loser = chooseA ? b : a;
+      helperApplyAnswer(winner, loser);
+    });
+  });
+}
+
+function helperUpdateElo(winner, loser, weight = 1, applyExposureUpdate = true) {
+  const state = rankHelperState;
+  if (!state) return;
+  const key = helperPairKey(winner.name, loser.name);
+  state.askedPairs.add(key);
+
+  const rw = state.ratings.get(winner.name) || 1500;
+  const rl = state.ratings.get(loser.name) || 1500;
+  const winnerMatches = state.matchCounts.get(winner.name) || 0;
+  const loserMatches = state.matchCounts.get(loser.name) || 0;
+  if (applyExposureUpdate) {
+    state.matchCounts.set(winner.name, winnerMatches + 1);
+    state.matchCounts.set(loser.name, loserMatches + 1);
+  }
+
+  const expectedW = 1 / (1 + Math.pow(10, (rl - rw) / 400));
+  const expectedL = 1 - expectedW;
+  // Higher K early (more adaptive), lower K as confidence increases.
+  const avgMatches = (winnerMatches + loserMatches) / 2;
+  const k = Math.max(14, 30 - (avgMatches * 1.2));
+  state.ratings.set(winner.name, rw + (k * weight) * (1 - expectedW));
+  state.ratings.set(loser.name, rl + (k * weight) * (0 - expectedL));
+}
+
+function helperPushRecentTeams(teamNames) {
+  const state = rankHelperState;
+  if (!state) return;
+  state.recentTeams.push(...teamNames);
+  if (state.recentTeams.length > 10) {
+    state.recentTeams = state.recentTeams.slice(state.recentTeams.length - 10);
+  }
+}
+
+function helperApplyAnswer(winner, loser) {
+  const state = rankHelperState;
+  if (!state) return;
+  helperUpdateElo(winner, loser, 1);
+  helperPushRecentTeams([winner.name, loser.name]);
+  state.questionIndex += 1;
+  helperRenderQuestion();
+}
+
+function helperApplyMultiAnswer(winner, group) {
+  const state = rankHelperState;
+  if (!state) return;
+  const names = group.map(t => t.name);
+  const multiKey = helperMultiKey(names);
+  state.askedMultiGroups.add(multiKey);
+  helperPushRecentTeams(names);
+
+  group.forEach(team => {
+    const count = state.matchCounts.get(team.name) || 0;
+    state.matchCounts.set(team.name, count + 1);
+  });
+
+  group.forEach(team => {
+    if (team.name === winner.name) return;
+    helperUpdateElo(winner, team, 0.62, false);
+  });
+
+  state.questionIndex += 1;
+  helperRenderQuestion();
+}
+
+function helperApplyBaselineRanking(group, orderedTeams) {
+  const state = rankHelperState;
+  if (!state) return;
+  const names = group.map(t => t.name);
+  const baselineKey = helperMultiKey(names);
+  state.askedBaselineGroups.add(baselineKey);
+  helperPushRecentTeams(names);
+
+  group.forEach(team => {
+    const count = state.matchCounts.get(team.name) || 0;
+    state.matchCounts.set(team.name, count + 1);
+  });
+
+  for (let i = 0; i < orderedTeams.length; i++) {
+    for (let j = i + 1; j < orderedTeams.length; j++) {
+      helperUpdateElo(orderedTeams[i], orderedTeams[j], 0.34, false);
+    }
+  }
+
+  state.questionIndex += 1;
+  helperRenderQuestion();
+}
+
+function helperRenderResults() {
+  const state = rankHelperState;
+  if (!state) return;
+
+  const ranked = [...state.pool]
+    .map(team => {
+      const rating = state.ratings.get(team.name) || 1500;
+      const seed = helperSeedScore(team);
+      return { team, score: rating + seed * 2 };
+    })
+    .sort((a, b) => b.score - a.score)
+    .map(row => row.team);
+
+  state.finalRanking = ranked;
+  const top = ranked.slice(0, 25);
+  const items = top.map((team, idx) => `
+    <div style="display:flex; align-items:center; gap:10px; padding:6px 4px;">
+      <img src="${helperTeamLogo(team)}" alt="${team.name} logo" style="width:44px; height:44px; object-fit:contain;">
+      <div>#${idx + 1} ${team.name} <span style="opacity:.75;">(${team.record || "N/A"})</span></div>
+    </div>
+  `).join("");
+  rankHelperBody.innerHTML = `
+    <div class="helperMeta">Done. Generated ranking from your ${state.questionIndex} answers.</div>
+    <div class="helperResultList">${items}</div>
+    <div class="modalActions" style="margin-top:10px;">
+      <button id="rankHelperApply">Use This Ranking</button>
+      <button id="rankHelperRestart">Restart</button>
+    </div>
+  `;
+
+  const applyBtn = document.getElementById("rankHelperApply");
+  const restartBtn = document.getElementById("rankHelperRestart");
+  applyBtn?.addEventListener("click", () => {
+    ranking = top;
+    const topSet = new Set(top.map(t => t.name));
+    honorableMentions = honorableMentions.filter(t => !topSet.has(t.name)).slice(0, 5);
+    persistCurrentRanking();
+    persistHonorableMentions();
+    renderRanking();
+    renderTeams();
+    updateChart();
+    rankHelperModal.style.display = "none";
+  });
+  restartBtn?.addEventListener("click", () => {
+    startRankHelper();
+  });
+}
+
+async function startRankHelper() {
+  await ensureApPollRanksLoaded();
+  await ensureCoachesPollRanksLoaded();
+
+  const pool = buildRankHelperPool();
+  if (pool.length < 2) {
+    rankHelperBody.innerHTML = `<div class="helperMeta">Not enough teams with data to run the helper yet.</div>`;
+    return;
+  }
+
+  rankHelperState = {
+    pool,
+    ratings: new Map(pool.map(team => [team.name, 1500 + helperSeedScore(team)])),
+    matchCounts: new Map(pool.map(team => [team.name, 0])),
+    recentTeams: [],
+    minAppearancesPerTeam: 2,
+    askedPairs: new Set(),
+    askedMultiGroups: new Set(),
+    askedBaselineGroups: new Set(),
+    currentPair: null,
+    currentGroup: null,
+    currentBaselineGroup: null,
+    currentBaselineSelection: [],
+    baselineRounds: 5,
+    multiQuestionEvery: 5,
+    questionIndex: 0,
+    totalQuestions: Math.min(120, Math.max(60, pool.length * 2)),
+    finalRanking: []
+  };
+  helperRenderQuestion();
+}
+
+function shouldSuppressTeamClick() {
+  return Date.now() < suppressTeamClickUntil;
+}
+
+function markTeamDragged() {
+  suppressTeamClickUntil = Date.now() + 220;
+}
+
+function pickConferenceRecord(payload) {
+  const records = payload?.team?.record?.items || payload?.record?.items || [];
+  if (!Array.isArray(records)) return "N/A";
+  const match = records.find(item => {
+    const type = String(item?.type || "").toLowerCase();
+    const name = String(item?.name || "").toLowerCase();
+    return type.includes("vsconf") || type.includes("conference") || name.includes("conference");
+  });
+  return match?.summary || "N/A";
+}
+
+function pickNetRank(payload) {
+  const candidates = [
+    payload?.team?.netRank,
+    payload?.team?.ranks?.net,
+    payload?.team?.rankings?.net,
+    payload?.team?.netRanking
+  ];
+  for (const value of candidates) {
+    if (value !== undefined && value !== null && String(value).trim() !== "") return String(value);
+  }
+  return "N/A";
+}
+
+function pickKenPomRank(payload) {
+  const candidates = [
+    payload?.team?.kenpomRank,
+    payload?.team?.ranks?.kenpom,
+    payload?.team?.rankings?.kenpom
+  ];
+  for (const value of candidates) {
+    if (value !== undefined && value !== null && String(value).trim() !== "") return String(value);
+  }
+  return "N/A";
+}
+
+function parseLastGameFromSchedulePayload(payload, teamId) {
+  const events = Array.isArray(payload?.events) ? payload.events : [];
+  if (!events.length) return null;
+
+  const now = Date.now();
+  const candidates = events
+    .map(event => {
+      const dateMs = new Date(event?.date || "").getTime();
+      if (!Number.isFinite(dateMs)) return null;
+      const comp = event?.competitions?.[0];
+      const competitors = Array.isArray(comp?.competitors) ? comp.competitors : [];
+      const self = competitors.find(c => String(c?.team?.id || "") === String(teamId));
+      const opponent = competitors.find(c => String(c?.team?.id || "") !== String(teamId));
+      if (!self || !opponent) return null;
+      const selfScore = Number(self?.score ?? NaN);
+      const oppScore = Number(opponent?.score ?? NaN);
+      const hasScore = Number.isFinite(selfScore) && Number.isFinite(oppScore);
+      const isCompleted = event?.status?.type?.completed === true;
+      const played = isCompleted || (hasScore && dateMs <= now);
+      if (!played) return null;
+      return { event, dateMs };
+    })
+    .filter(Boolean)
+    .sort((a, b) => b.dateMs - a.dateMs);
+
+  if (!candidates.length) return null;
+  const lastEvent = candidates[0].event;
+  const comp = lastEvent?.competitions?.[0];
+  const competitors = Array.isArray(comp?.competitors) ? comp.competitors : [];
+  if (!competitors.length) return null;
+
+  const self = competitors.find(c => String(c?.team?.id || "") === String(teamId));
+  if (!self) return null;
+  const opponent = competitors.find(c => String(c?.team?.id || "") !== String(teamId));
+  if (!opponent) return null;
+
+  const selfScore = Number(self?.score ?? NaN);
+  const oppScore = Number(opponent?.score ?? NaN);
+  const hasScore = Number.isFinite(selfScore) && Number.isFinite(oppScore);
+  const result = hasScore ? (selfScore > oppScore ? "W" : selfScore < oppScore ? "L" : "T") : "N/A";
+  const locationPrefix = String(self?.homeAway || "").toLowerCase() === "away" ? "@" : "vs";
+
+  return {
+    opponent: opponent?.team?.shortDisplayName || opponent?.team?.displayName || "Unknown Opponent",
+    locationPrefix,
+    result,
+    score: hasScore ? `${selfScore}-${oppScore}` : "N/A",
+    date: lastEvent?.date || ""
+  };
+}
+
+function parseNextGameFromSchedulePayload(payload, teamId) {
+  const events = Array.isArray(payload?.events) ? payload.events : [];
+  if (!events.length) return null;
+
+  const now = Date.now();
+  const parsedEvents = events
+    .map(event => ({
+      event,
+      dateMs: Number.isFinite(new Date(event?.date || "").getTime()) ? new Date(event?.date || "").getTime() : null,
+      completed: event?.status?.type?.completed === true
+    }))
+    .filter(item => item.dateMs !== null);
+
+  if (!parsedEvents.length) return null;
+
+  const futureOrToday = parsedEvents
+    .filter(item => item.dateMs >= now && !item.completed)
+    .sort((a, b) => a.dateMs - b.dateMs);
+
+  const nonCompleted = parsedEvents
+    .filter(item => !item.completed)
+    .sort((a, b) => Math.abs(a.dateMs - now) - Math.abs(b.dateMs - now));
+
+  const nextEvent = (futureOrToday[0] || nonCompleted[0] || {}).event;
+  if (!nextEvent) return null;
+  const comp = nextEvent?.competitions?.[0];
+  const competitors = Array.isArray(comp?.competitors) ? comp.competitors : [];
+  if (!competitors.length) return null;
+
+  const self = competitors.find(c => String(c?.team?.id || "") === String(teamId));
+  if (!self) return null;
+  const opponent = competitors.find(c => String(c?.team?.id || "") !== String(teamId));
+  if (!opponent) return null;
+  const locationPrefix = String(self?.homeAway || "").toLowerCase() === "away" ? "@" : "vs";
+
+  return {
+    opponent: opponent?.team?.shortDisplayName || opponent?.team?.displayName || "Unknown Opponent",
+    locationPrefix,
+    date: nextEvent?.date || "",
+    status: nextEvent?.status?.type?.shortDetail || nextEvent?.status?.type?.description || "Scheduled"
+  };
+}
+
+function formatEventDate(value) {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  return date.toLocaleString(undefined, {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit"
+  });
+}
+
+async function fetchTeamScheduleFromEspn(teamId) {
+  const endpoint = `https://site.api.espn.com/apis/site/v2/sports/${getSportApiPath()}/teams/${teamId}/schedule`;
+  const response = await fetch(endpoint);
+  if (!response.ok) return null;
+  return response.json();
+}
+
+async function fetchLastGameFromEspn(teamId) {
+  try {
+    const payload = await fetchTeamScheduleFromEspn(teamId);
+    if (!payload) return null;
+    return parseLastGameFromSchedulePayload(payload, teamId);
+  } catch {
+    return null;
+  }
+}
+
+async function fetchTeamDetailMetrics(team) {
+  const initial = {
+    conferenceRecord: team.conferenceRecord || "N/A",
+    netRank: team.netRank || "N/A",
+    kenpomRank: team.kenpomRank || "N/A",
+    apRank: team.apRank || "Unranked",
+    coachesRank: team.coachesRank || "Unranked",
+    lastGame: team.lastGame || null,
+    nextGame: team.nextGame || null
+  };
+  const cbsGames = await fetchLastAndNextGameFromCbs(team.name);
+
+  const needFetch = [initial.conferenceRecord, initial.netRank, initial.kenpomRank].some(value => value === "N/A");
+  let teamId = getEspnTeamId(team);
+  if (!teamId) {
+    try {
+      await ensureTeamIdsFromEspn();
+      teamId = getEspnTeamId(team);
+    } catch {
+      return {
+        ...initial,
+        lastGame: cbsGames.lastGame || initial.lastGame || null,
+        nextGame: cbsGames.nextGame || initial.nextGame || null
+      };
+    }
+  }
+  if (!teamId) {
+    return {
+      ...initial,
+      lastGame: initial.lastGame || cbsGames.lastGame || null,
+      nextGame: initial.nextGame || cbsGames.nextGame || null
+    };
+  }
+
+  try {
+    const [payload, schedulePayload, netSource] = await Promise.all([
+      needFetch ? fetchTeamDetailsFromEspn(teamId) : Promise.resolve(null),
+      fetchTeamScheduleFromEspn(teamId),
+      ensureNetRankingsLoaded()
+    ]);
+    const lastGame = schedulePayload ? parseLastGameFromSchedulePayload(schedulePayload, teamId) : null;
+    const nextGame = schedulePayload ? parseNextGameFromSchedulePayload(schedulePayload, teamId) : null;
+    const cbsNetRank = lookupNetRankForTeam(netSource, team);
+
+    const merged = {
+      conferenceRecord: (!needFetch || initial.conferenceRecord !== "N/A" || !payload) ? initial.conferenceRecord : pickConferenceRecord(payload),
+      netRank: cbsNetRank || ((!needFetch || initial.netRank !== "N/A" || !payload) ? initial.netRank : pickNetRank(payload)),
+      kenpomRank: (!needFetch || initial.kenpomRank !== "N/A" || !payload) ? initial.kenpomRank : pickKenPomRank(payload),
+      apRank: initial.apRank,
+      coachesRank: initial.coachesRank,
+      lastGame: lastGame || cbsGames.lastGame || initial.lastGame || null,
+      nextGame: schedulePayload ? (nextGame || cbsGames.nextGame || null) : (cbsGames.nextGame || initial.nextGame || null)
+    };
+    team.conferenceRecord = merged.conferenceRecord || "N/A";
+    team.netRank = merged.netRank || "N/A";
+    team.kenpomRank = merged.kenpomRank || "N/A";
+    team.apRank = merged.apRank || "Unranked";
+    team.coachesRank = merged.coachesRank || "Unranked";
+    team.lastGame = merged.lastGame;
+    team.nextGame = merged.nextGame;
+    persistTeamRecords();
+    return merged;
+  } catch {
+    return initial;
+  }
+}
+
+function renderTeamDetails(team, details) {
+  const conferenceLabel = team.conference || "Other";
+  const logo = team.logo || "";
+  const seasonRange = getTeamSavedRankRange(team.name);
+  const showBasketballOnly = isBasketballSport();
+  const secondPollLabel = isBasketballSport() ? "Coaches Poll" : "CFP Ranking";
+  const metricsBlock = showBasketballOnly
+    ? `
+      <div class="teamDetailItem"><strong>KenPom Ranking</strong>${details.kenpomRank || team.kenpomRank || "N/A"}</div>
+      <div class="teamDetailItem"><strong>NET Ranking</strong>${details.netRank || team.netRank || "N/A"}</div>
+    `
+    : "";
+  teamDetailsBody.innerHTML = `
+    <div class="teamDetailsHeader">
+      <img src="${logo}" alt="${team.name} logo">
+      <div><strong>${team.name}</strong></div>
+    </div>
+    <div class="teamDetailsGrid">
+      <div class="teamDetailItem"><strong>Record</strong>${team.record || "N/A"}</div>
+      <div class="teamDetailItem"><strong>Conference</strong>${conferenceLabel}</div>
+      ${metricsBlock}
+      <div class="teamDetailItem"><strong>AP Poll</strong>${details.apRank || team.apRank || "Unranked"}</div>
+      <div class="teamDetailItem"><strong>${secondPollLabel}</strong>${details.coachesRank || team.coachesRank || "Unranked"}</div>
+      <div class="teamDetailItem"><strong>Highest Season Power Rank</strong>${seasonRange.highest}</div>
+      <div class="teamDetailItem"><strong>Lowest Season Power Rank</strong>${seasonRange.lowest}</div>
+      <div class="teamDetailItem" style="grid-column: 1 / -1;">
+        <strong>Last Game</strong>
+        ${(details.lastGame || team.lastGame)
+          ? `${(details.lastGame || team.lastGame).result} ${((details.lastGame || team.lastGame).locationPrefix || "vs")} ${(details.lastGame || team.lastGame).opponent} (${(details.lastGame || team.lastGame).score})`
+          : "N/A"}
+      </div>
+      <div class="teamDetailItem" style="grid-column: 1 / -1;">
+        <strong>Next Game</strong>
+        ${(details.nextGame || team.nextGame)
+          ? `${((details.nextGame || team.nextGame).locationPrefix || "vs")} ${(details.nextGame || team.nextGame).opponent} (${formatEventDate((details.nextGame || team.nextGame).date) || "TBD"})`
+          : "N/A"}
+      </div>
+    </div>
+  `;
+}
+
+async function openTeamDetails(team) {
+  teamDetailsBody.innerHTML = `<div><strong>${team.name}</strong></div><div style="margin-top:8px;">Loading details...</div>`;
+  teamDetailsModal.style.display = "flex";
+  const details = await fetchTeamDetailMetrics(team);
+  renderTeamDetails(team, details);
+}
+
+function compareTeams(a, b, sortMode) {
+  if (sortMode === "alphaDesc") return b.name.localeCompare(a.name);
+  if (sortMode === "recordBest" || sortMode === "recordWorst") {
+    const aRecord = parseRecord(a.record);
+    const bRecord = parseRecord(b.record);
+    const direction = sortMode === "recordBest" ? -1 : 1;
+
+    if (!aRecord && !bRecord) return a.name.localeCompare(b.name);
+    if (!aRecord) return 1;
+    if (!bRecord) return -1;
+
+    if (aRecord.winPct !== bRecord.winPct) {
+      return (aRecord.winPct - bRecord.winPct) * direction;
+    }
+    if (aRecord.wins !== bRecord.wins) {
+      return (aRecord.wins - bRecord.wins) * direction;
+    }
+    return a.name.localeCompare(b.name);
+  }
+  return a.name.localeCompare(b.name);
+}
+
+function getTeamSavedRankRange(teamName) {
+  if (!Array.isArray(weeks) || !weeks.length) {
+    return { highest: "No saved weeks yet", lowest: "No saved weeks yet" };
+  }
+  const ranks = [];
+  let missingInAnyWeek = false;
+  weeks.forEach(week => {
+    const topIdx = Array.isArray(week?.rankingNames) ? week.rankingNames.indexOf(teamName) : -1;
+    if (topIdx !== -1) {
+      ranks.push(topIdx + 1);
+      return;
+    }
+    const hmIdx = Array.isArray(week?.honorableNames) ? week.honorableNames.indexOf(teamName) : -1;
+    if (hmIdx !== -1) {
+      ranks.push(26 + hmIdx);
+      return;
+    }
+    missingInAnyWeek = true;
+  });
+  if (!ranks.length) {
+    return { highest: "Not ranked in saved weeks", lowest: "Not ranked in saved weeks" };
+  }
+  const highest = Math.min(...ranks);
+  const lowest = Math.max(...ranks);
+  const formatRank = (n) => n >= 26 ? `#${n} (HM)` : `#${n}`;
+  return { highest: formatRank(highest), lowest: missingInAnyWeek ? "Not Ranked" : formatRank(lowest) };
+}
+
+function renderRanking() {
+  rankingDiv.querySelectorAll(".rankingSlots, .honorableWrap").forEach(el => el.remove());
+
+  const slotsWrap = document.createElement("div");
+  slotsWrap.className = "rankingSlots";
+
+  for (let i = 0; i < 25; i++) {
+    const slot = document.createElement("div");
+    slot.className = "rankSlot";
+    slot.dataset.index = String(i);
+
+    const label = document.createElement("div");
+    label.className = "rankSlotLabel";
+    label.textContent = `#${i + 1}`;
+    slot.appendChild(label);
+
+    const team = ranking[i];
+    if (team) {
+      const teamDiv = document.createElement("div");
+      teamDiv.className = "team";
+      teamDiv.style.margin = "0";
+      teamDiv.style.flex = "1";
+      teamDiv.draggable = true;
+      const conferenceLabel = team.conference || "Other";
+      teamDiv.innerHTML = `<img src="${team.logo}" alt="${team.name} logo"><div>${team.name}<br>${team.record} | ${conferenceLabel}</div>`;
+      teamDiv.addEventListener("dragstart", e => {
+        e.dataTransfer.setData("text", team.name);
+        e.dataTransfer.setData("fromRanking", "true");
+        e.dataTransfer.setData("fromHonorable", "false");
+      });
+      teamDiv.addEventListener("dragend", markTeamDragged);
+      teamDiv.addEventListener("click", () => {
+        if (shouldSuppressTeamClick()) return;
+        openTeamDetails(team);
+      });
+      slot.appendChild(teamDiv);
+    } else {
+      const empty = document.createElement("div");
+      empty.className = "rankSlotEmpty";
+      empty.textContent = "Drop team here";
+      slot.appendChild(empty);
+    }
+
+    slotsWrap.appendChild(slot);
+  }
+
+  rankingDiv.appendChild(slotsWrap);
+
+  const hmWrap = document.createElement("div");
+  hmWrap.className = "honorableWrap";
+  hmWrap.innerHTML = `<div class="honorableTitle">Honerable Mention</div>`;
+  const hmSlots = document.createElement("div");
+  hmSlots.className = "honorableSlots";
+
+  for (let i = 0; i < 5; i++) {
+    const slot = document.createElement("div");
+    slot.className = "hmSlot";
+    slot.dataset.index = String(i);
+
+    const label = document.createElement("div");
+    label.className = "hmLabel";
+    label.textContent = `HM ${i + 1}`;
+    slot.appendChild(label);
+
+    const team = honorableMentions[i];
+    if (team) {
+      const teamDiv = document.createElement("div");
+      teamDiv.className = "team";
+      teamDiv.style.margin = "0";
+      teamDiv.style.padding = "4px";
+      teamDiv.style.gap = "6px";
+      teamDiv.draggable = true;
+      const conferenceLabel = team.conference || "Other";
+      teamDiv.innerHTML = `<img src="${team.logo}" alt="${team.name} logo" style="width:28px;height:28px;"><div style="font-size:12px;">${team.name}<br>${team.record} | ${conferenceLabel}</div>`;
+      teamDiv.addEventListener("dragstart", e => {
+        e.dataTransfer.setData("text", team.name);
+        e.dataTransfer.setData("fromRanking", "false");
+        e.dataTransfer.setData("fromHonorable", "true");
+      });
+      teamDiv.addEventListener("dragend", markTeamDragged);
+      teamDiv.addEventListener("click", () => {
+        if (shouldSuppressTeamClick()) return;
+        openTeamDetails(team);
+      });
+      slot.appendChild(teamDiv);
+    } else {
+      const empty = document.createElement("div");
+      empty.className = "rankSlotEmpty";
+      empty.style.textAlign = "center";
+      empty.textContent = "Drop team";
+      slot.appendChild(empty);
+    }
+
+    hmSlots.appendChild(slot);
+  }
+
+  hmWrap.appendChild(hmSlots);
+  rankingDiv.appendChild(hmWrap);
+  syncPanelHeights();
+}
+
+function syncPanelHeights() {
+  const fixed = "2300px";
+  availableDiv.style.height = fixed;
+  availableDiv.style.minHeight = fixed;
+  availableDiv.style.maxHeight = fixed;
+  availableDiv.style.flex = "0 0 auto";
+  rankingDiv.style.height = fixed;
+  rankingDiv.style.minHeight = fixed;
+  rankingDiv.style.maxHeight = fixed;
+}
+
+function autoScrollDuringDrag(event) {
+  const edge = 50;
+  const minSpeed = 3;
+  const maxSpeed = 9;
+  const viewportH = window.innerHeight || document.documentElement.clientHeight;
+  const y = event.clientY;
+
+  if (y < edge) {
+    const ratio = (edge - y) / edge;
+    const speed = Math.round(minSpeed + (maxSpeed - minSpeed) * Math.max(0, Math.min(1, ratio)));
+    window.scrollBy(0, -speed);
+  } else if (y > viewportH - edge) {
+    const ratio = (y - (viewportH - edge)) / edge;
+    const speed = Math.round(minSpeed + (maxSpeed - minSpeed) * Math.max(0, Math.min(1, ratio)));
+    window.scrollBy(0, speed);
+  }
+}
+
+function updateChart() {
+  scheduleConferenceRender();
+}
+
+function scheduleConferenceRender() {
+  if (conferenceRenderScheduled) return;
+  conferenceRenderScheduled = true;
+  requestAnimationFrame(() => {
+    conferenceRenderScheduled = false;
+    drawConferenceChart();
+  });
+}
+
+function normalizeConferenceKey(value) {
+  return String(value || "")
+    .toLowerCase()
+    .replace(/conference|league|athletic/g, "")
+    .replace(/[^a-z0-9]/g, "");
+}
+
+function getConferenceKeyVariants(name) {
+  const raw = String(name || "");
+  const key = normalizeConferenceKey(raw);
+  const out = new Set([key]);
+
+  const alias = {
+    acc: ["atlanticcoast"],
+    aac: ["american", "americanathletic"],
+    american: ["aac", "americanathletic"],
+    atlantic10: ["a10"],
+    a10: ["atlantic10"],
+    bigten: ["b1g"],
+    b1g: ["bigten"],
+    cusa: ["conferenceusa"],
+    conferenceusa: ["cusa"],
+    mvc: ["missourivalley"],
+    missourivalley: ["mvc"],
+    maac: ["metroatlanticathletic"],
+    metroatlanticathletic: ["maac"],
+    mac: ["midamerican"],
+    midamerican: ["mac"],
+    sec: ["southeastern"],
+    socon: ["southern"],
+    southern: ["socon"],
+    summit: ["summitleague"],
+    summitleague: ["summit"],
+    wcc: ["westcoast"],
+    westcoast: ["wcc"],
+    wac: ["westernathletic"],
+    westernathletic: ["wac"],
+    ovc: ["ohiovalley"],
+    ohiovalley: ["ovc"],
+    nec: ["northeast"],
+    northeast: ["nec"],
+    meac: ["mideasternathletic"],
+    mideasternathletic: ["meac"],
+    swac: ["southwesternathletic"],
+    southwesternathletic: ["swac"],
+    asun: ["atlanticsun"],
+    atlanticsun: ["asun"],
+    ivy: ["ivyleague"],
+    ivyleague: ["ivy"],
+    horizon: ["horizonleague"],
+    horizonleague: ["horizon"],
+    patriot: ["patriotleague"],
+    patriotleague: ["patriot"]
+  };
+
+  if (alias[key]) alias[key].forEach(k => out.add(normalizeConferenceKey(k)));
+  return [...out].filter(Boolean);
+}
+
+function cacheConferenceLogo(conference, src) {
+  if (!conference || !src) return;
+  CONFERENCE_LOGO_URLS[conference] = src;
+  delete conferenceLogoImageCache[conference];
+}
+
+function parseEspnGroupsFromPayload(payload) {
+  const groups =
+    payload?.sports?.[0]?.leagues?.[0]?.groups ||
+    payload?.groups ||
+    payload?.children ||
+    [];
+  return Array.isArray(groups) ? groups : [];
+}
+
+async function fetchConferenceLogosFromEspn() {
+  const endpoints = [
+    `https://site.api.espn.com/apis/site/v2/sports/${getSportApiPath()}/groups`,
+    `https://site.web.api.espn.com/apis/v2/sports/${getSportApiPath()}/groups`
+  ];
+  const byKey = new Map();
+
+  for (const endpoint of endpoints) {
+    try {
+      const response = await fetch(endpoint);
+      if (!response.ok) continue;
+      const payload = await response.json();
+      const groups = parseEspnGroupsFromPayload(payload);
+
+      groups.forEach(group => {
+        const names = [
+          group?.shortName,
+          group?.abbreviation,
+          group?.name,
+          group?.displayName
+        ].filter(Boolean);
+
+        const logo =
+          group?.logos?.[0]?.href ||
+          group?.logo ||
+          group?.images?.[0]?.href ||
+          group?.images?.[0]?.url ||
+          "";
+
+        if (!logo) return;
+        names.forEach(n => {
+          const key = normalizeConferenceKey(n);
+          if (key && !byKey.has(key)) byKey.set(key, logo);
+        });
+      });
+    } catch {
+      // Try next endpoint.
+    }
+  }
+
+  return byKey;
+}
+
+async function ensureConferenceLogosLoaded() {
+  if (conferenceLogoLoadedSports.has(currentSport)) return true;
+  if (conferenceLogoLoadPromise) return conferenceLogoLoadPromise;
+
+  conferenceLogoLoadPromise = (async () => {
+    const byKey = await fetchConferenceLogosFromEspn();
+    if (!byKey.size) return false;
+
+    const uniqueConfs = [...new Set(teams.map(t => t.conference).filter(Boolean))];
+    uniqueConfs.forEach(conf => {
+      const variants = getConferenceKeyVariants(conf);
+      const matched = variants.map(v => byKey.get(v)).find(Boolean);
+      if (matched) cacheConferenceLogo(conf, matched);
+    });
+    conferenceLogoLoadedSports.add(currentSport);
+    return Object.keys(CONFERENCE_LOGO_URLS).length > 0;
+  })().finally(() => {
+    conferenceLogoLoadPromise = null;
+  });
+
+  return conferenceLogoLoadPromise;
+}
+
+function getConferenceTooltipEl() {
+  const container = document.getElementById("chartContainer");
+  if (!container) return null;
+  let tooltip = container.querySelector(".conferenceTooltip");
+  if (!tooltip) {
+    tooltip = document.createElement("div");
+    tooltip.className = "conferenceTooltip";
+    tooltip.innerHTML = `
+      <div class="conferenceTooltipTitle"></div>
+      <img alt="Conference logo">
+      <div class="conferenceTooltipMeta"></div>
+    `;
+    container.appendChild(tooltip);
+  }
+  return tooltip;
+}
+
+function hideConferenceTooltip() {
+  const tooltip = getConferenceTooltipEl();
+  if (!tooltip) return;
+  tooltip.style.display = "none";
+}
+
+function getConferenceLogoImage(conference) {
+  const src = CONFERENCE_LOGO_URLS[conference];
+  if (!src) return null;
+  if (!conferenceLogoImageCache[conference]) {
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.src = src;
+    conferenceLogoImageCache[conference] = img;
+  }
+  return conferenceLogoImageCache[conference];
+}
+
+function showConferenceTooltip(bar, clientX, clientY) {
+  const tooltip = getConferenceTooltipEl();
+  if (!tooltip) return;
+
+  const titleEl = tooltip.querySelector(".conferenceTooltipTitle");
+  const metaEl = tooltip.querySelector(".conferenceTooltipMeta");
+  const imgEl = tooltip.querySelector("img");
+  const logoImage = getConferenceLogoImage(bar.conference);
+
+  titleEl.textContent = bar.conference;
+  metaEl.textContent = `${bar.value} ranked team${bar.value === 1 ? "" : "s"}`;
+
+  if (logoImage && logoImage.src) {
+    imgEl.src = logoImage.src;
+    imgEl.style.display = "block";
+  } else {
+    imgEl.removeAttribute("src");
+    imgEl.style.display = "none";
+  }
+
+  tooltip.style.display = "block";
+
+  const container = document.getElementById("chartContainer");
+  const containerRect = container.getBoundingClientRect();
+  const ttRect = tooltip.getBoundingClientRect();
+
+  const x = Math.min(
+    Math.max(8, clientX - containerRect.left + 12),
+    containerRect.width - ttRect.width - 8
+  );
+  const y = Math.max(8, clientY - containerRect.top - ttRect.height - 10);
+
+  tooltip.style.left = `${x}px`;
+  tooltip.style.top = `${y}px`;
+}
+
+function findConferenceBarAtCanvasPoint(x, y) {
+  return conferenceBarHitboxes.find(bar => (
+    x >= bar.x &&
+    x <= bar.x + bar.w &&
+    y >= bar.y &&
+    y <= bar.y + bar.h
+  )) || null;
+}
+
+function bindConferenceChartHover(canvas) {
+  if (canvas.dataset.hoverBound === "true") return;
+  canvas.dataset.hoverBound = "true";
+
+  canvas.addEventListener("mousemove", (event) => {
+    if (!conferenceBarHitboxes.length) {
+      hideConferenceTooltip();
+      return;
+    }
+    const rect = canvas.getBoundingClientRect();
+    const x = event.clientX - rect.left;
+    const y = event.clientY - rect.top;
+    const bar = findConferenceBarAtCanvasPoint(x, y);
+    if (!bar) {
+      hideConferenceTooltip();
+      return;
+    }
+    showConferenceTooltip(bar, event.clientX, event.clientY);
+  });
+
+  canvas.addEventListener("mouseleave", hideConferenceTooltip);
+}
+
+function drawConferenceChart() {
+  const canvas = document.getElementById("conferenceChart");
+  const ctx = canvas.getContext("2d");
+  bindConferenceChartHover(canvas);
+  ensureConferenceLogosLoaded();
+  conferenceBarHitboxes = [];
+  const dpr = window.devicePixelRatio || 1;
+  const cssWidth = Math.max(canvas.clientWidth || 900, 900);
+  const chartHeight = 420;
+  const headerH = 52;
+  const topPad = 90;
+  const bottomPad = 74;
+  const leftPad = 64;
+  const rightPad = 28;
+  const palette = getTrendPalette();
+
+  canvas.style.height = `${chartHeight}px`;
+  canvas.width = Math.floor(cssWidth * dpr);
+  canvas.height = Math.floor(chartHeight * dpr);
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, cssWidth, chartHeight);
+
+  ctx.fillStyle = palette.background;
+  ctx.fillRect(0, 0, cssWidth, chartHeight);
+
+  ctx.fillStyle = palette.headerBg;
+  ctx.fillRect(0, 0, cssWidth, headerH);
+  ctx.fillStyle = palette.headerText;
+  ctx.font = "italic 700 16px Arial";
+  ctx.textAlign = "left";
+  ctx.fillText("Conference Breakdown", 10, 33);
+
+  const confCounts = {};
+  ranking.slice(0, 25).forEach(t => {
+    confCounts[t.conference] = (confCounts[t.conference] || 0) + 1;
+  });
+
+  const labels = Object.keys(confCounts);
+  if (!labels.length) {
+    hideConferenceTooltip();
+    ctx.fillStyle = palette.primaryText;
+    ctx.font = "600 18px Arial";
+    ctx.textAlign = "center";
+    ctx.fillText("Add teams to your ranking to see conference bars.", cssWidth / 2, chartHeight / 2);
+    return;
+  }
+
+  const values = labels.map(label => confCounts[label]);
+  const maxValue = Math.max(1, ...values);
+  const roundedMax = Math.max(5, Math.ceil(maxValue / 5) * 5);
+  const plotLeft = leftPad;
+  const plotRight = cssWidth - rightPad;
+  const plotTop = topPad;
+  const plotBottom = chartHeight - bottomPad;
+  const plotW = plotRight - plotLeft;
+  const plotH = plotBottom - plotTop;
+
+  ctx.strokeStyle = palette.grid;
+  ctx.lineWidth = 1;
+  for (let i = 0; i <= roundedMax; i += 1) {
+    const y = plotBottom - ((i / roundedMax) * plotH);
+    ctx.beginPath();
+    ctx.moveTo(plotLeft, y);
+    ctx.lineTo(plotRight, y);
+    ctx.stroke();
+  }
+
+  ctx.strokeStyle = palette.axis;
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.moveTo(plotLeft, plotTop);
+  ctx.lineTo(plotLeft, plotBottom);
+  ctx.lineTo(plotRight, plotBottom);
+  ctx.stroke();
+
+  ctx.fillStyle = palette.axis;
+  ctx.font = "600 11px Arial";
+  ctx.textAlign = "right";
+  for (let i = 0; i <= roundedMax; i += 1) {
+    const y = plotBottom - ((i / roundedMax) * plotH);
+    ctx.fillText(String(i), plotLeft - 8, y + 3);
+  }
+
+  const count = labels.length;
+  const slotW = plotW / count;
+  const barW = Math.min(56, slotW * 0.62);
+
+  labels.forEach((conference, i) => {
+    const value = confCounts[conference];
+    const xCenter = plotLeft + (slotW * i) + (slotW / 2);
+    const barH = (value / roundedMax) * plotH;
+    const x = xCenter - (barW / 2);
+    const y = plotBottom - barH;
+
+    ctx.fillStyle = "rgba(75, 85, 99, 0.78)";
+    ctx.fillRect(x, y, barW, barH);
+    conferenceBarHitboxes.push({
+      conference,
+      value,
+      x,
+      y,
+      w: barW,
+      h: barH
+    });
+
+    ctx.fillStyle = palette.primaryText;
+    ctx.font = "600 12px Arial";
+    ctx.textAlign = "center";
+    ctx.fillText(String(value), xCenter, y - 6);
+
+    let label = conference;
+    if (label.length > 12) label = `${label.slice(0, 12)}...`;
+    ctx.fillStyle = palette.secondaryText;
+    ctx.font = "600 11px Arial";
+    ctx.fillText(label, xCenter, plotBottom + 18);
+  });
+}
+
+populateConfFilter();
+ensureConferenceLogosLoaded();
+renderRanking();
+renderTeams();
+updateChart();
+renderWeekSelectors();
+renderSavedListsMenu();
+compareSelectedWeeks();
+updateTrendChart();
+window.addEventListener("resize", scheduleTrendRender);
+window.addEventListener("resize", () => {
+  hideConferenceTooltip();
+  scheduleConferenceRender();
+  syncPanelHeights();
+});
+document.addEventListener("dragover", autoScrollDuringDrag);
+window.addEventListener("teamsUpdated", () => {
+  basketballTeamsMaster = [...teams];
+  if (currentSport !== "basketball") {
+    if (footballTeamsMaster.length) setCurrentTeams(footballTeamsMaster);
+    return;
+  }
+  ranking = loadCurrentRanking();
+  honorableMentions = loadHonorableMentions();
+  populateConfFilter();
+  ensureConferenceLogosLoaded();
+  renderRanking();
+  renderTeams();
+  updateChart();
+});
+
+</script>
+
+</body>
+</html>

@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Team Details</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div id="team-details"></div>
+
+<script src="data.js"></script>
+<script>
+const params = new URLSearchParams(window.location.search);
+const teamId = params.get("team");
+const team = teams.find(t => t.id === teamId);
+const container = document.getElementById("team-details");
+
+if (team) {
+  container.innerHTML = `
+    <h1 style="font-size:48px; margin-bottom:20px;">
+      ${team.name}
+    </h1>
+
+    <div class="team-card">
+      <p><strong>Record:</strong> ${team.record}</p>
+      <p><strong>NET Ranking:</strong> ${team.net}</p>
+      <p id="latest-game"><em>Loading latest game...</em></p>
+    </div>
+
+    <br>
+    <a href="index.html">← Back to Rankings</a>
+  `;
+
+  // STEP 1: Find the team in TheSportsDB
+  fetch(`https://www.thesportsdb.com/api/v1/json/3/searchteams.php?t=${team.name}`)
+    .then(response => response.json())
+    .then(teamData => {
+      if (teamData.teams && teamData.teams.length > 0) {
+        const id = teamData.teams[0].idTeam;
+
+        // STEP 2: Get last game
+        fetch(`https://www.thesportsdb.com/api/v1/json/3/eventslast.php?id=${id}`)
+          .then(response => response.json())
+          .then(gameData => {
+            if (gameData.results && gameData.results.length > 0) {
+              const lastGame = gameData.results[0];
+
+              document.getElementById("latest-game").innerHTML = `
+                <strong>Last Game:</strong><br><br>
+                ${lastGame.strEvent}<br>
+                <strong>${lastGame.intHomeScore} - ${lastGame.intAwayScore}</strong><br>
+                ${lastGame.dateEvent}
+              `;
+            } else {
+              document.getElementById("latest-game").innerHTML =
+                "<em>No recent game found.</em>";
+            }
+          });
+      } else {
+        document.getElementById("latest-game").innerHTML =
+          "<em>Team not found in live database.</em>";
+      }
+    })
+    .catch(error => {
+      document.getElementById("latest-game").innerHTML =
+        "<em>Could not load live data.</em>";
+      console.error(error);
+    });
+} else {
+  container.innerHTML = "<h1>Team Not Found</h1>";
+}
+</script>
+
+</body>
+</html>
