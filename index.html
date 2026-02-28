@@ -755,7 +755,7 @@ body.preAuth #pinModal {
 </style>
 </head>
 
-<body class="preAuth">
+<body>
 
 <div class="header">
 <span id="appTitle">College Basketball Power Ranker</span>
@@ -910,6 +910,7 @@ const STORAGE_KEYS = {
   teamStats: "cbb_team_stats_v1"
 };
 const ARCHIVE_FOOTBALL = true;
+const ARCHIVE_LOGIN = true;
 const PIN_SESSION_KEY = "cbb_active_pin_v1";
 const PIN_REGISTRY_KEY = "cbb_registered_pins_v1";
 const REMOTE_SYNC_API_BASE = `${window.location.origin}/api`;
@@ -1100,6 +1101,10 @@ function hasLocalProfileForPin(pin) {
 }
 
 function setAuthState(isAuthenticated) {
+  if (ARCHIVE_LOGIN) {
+    document.body.classList.remove("preAuth");
+    return;
+  }
   document.body.classList.toggle("preAuth", !isAuthenticated);
 }
 
@@ -1425,12 +1430,15 @@ async function refreshDataForActivePin() {
   renderSavedListsMenu();
   compareSelectedWeeks();
   updateTrendChart();
-  changePinBtn.textContent = `PIN: ${activePin || "guest"}`;
+  changePinBtn.textContent = ARCHIVE_LOGIN ? "PIN: Archived" : `PIN: ${activePin || "guest"}`;
   if (activePin) registerLocalPin(activePin);
   setAuthState(Boolean(activePin));
 }
 
 function openPinModal(force = false) {
+  if (ARCHIVE_LOGIN) {
+    return Promise.resolve(activePin || "");
+  }
   if (force) setAuthState(false);
   pinModal.style.display = "flex";
   clearPinError();
@@ -1570,9 +1578,20 @@ basketballTeamsMaster = [...teams];
 applyArchivedSports();
 sportToggle.value = currentSport;
 updateSportUiText();
-changePinBtn.textContent = `PIN: ${activePin || "guest"}`;
+if (ARCHIVE_LOGIN) {
+  activePin = "";
+  sessionStorage.removeItem(PIN_SESSION_KEY);
+  changePinBtn.textContent = "PIN: Archived";
+  logoutBtn.style.display = "none";
+} else {
+  changePinBtn.textContent = `PIN: ${activePin || "guest"}`;
+}
 
 setTimeout(async () => {
+  if (ARCHIVE_LOGIN) {
+    await refreshDataForActivePin();
+    return;
+  }
   if (activePin) {
     await refreshDataForActivePin();
     return;
@@ -1612,6 +1631,9 @@ sportToggle.addEventListener("change", async () => {
 });
 
 logoutBtn.addEventListener("click", async () => {
+  if (ARCHIVE_LOGIN) {
+    return;
+  }
   activePin = "";
   sessionStorage.removeItem(PIN_SESSION_KEY);
   changePinBtn.textContent = "PIN";
